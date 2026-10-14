@@ -117,7 +117,7 @@ begin
 
   repeat
     UpdateRuntimeProgress;
-    WizardForm.ProcessMessages;
+    WizardForm.Refresh;
   until WaitForSingleObject(SetupHandle, 250) <> WAIT_TIMEOUT;
 
   UpdateRuntimeProgress;
