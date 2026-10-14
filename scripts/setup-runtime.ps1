@@ -142,7 +142,7 @@ function Initialize-PhpMyAdminStorage {
     finally {
         if ($server -and -not $server.HasExited) {
             Stop-Process -Id $server.Id -Force -ErrorAction SilentlyContinue
-            $server.WaitForExit(5000)
+            $server.WaitForExit(5000) | Out-Null
         }
         Remove-Item -LiteralPath $temporaryRoot -Recurse -Force -ErrorAction SilentlyContinue
     }
