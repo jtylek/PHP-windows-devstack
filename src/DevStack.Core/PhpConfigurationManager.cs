@@ -17,7 +17,10 @@ public sealed class PhpConfigurationManager
         "ctype", "curl", "fileinfo", "gd", "intl", "mbstring", "mysqli", "openssl", "pdo_mysql", "sodium", "xml", "zip"
     ];
 
-    private static readonly HashSet<string> BuiltInExtensions = ["pdo", "tokenizer"];
+    // PHP 8.5 ships these extensions in the core binary instead of as DLLs
+    // under ext. They are always available and must not be emitted as
+    // extension= directives in php.ini.
+    private static readonly HashSet<string> BuiltInExtensions = ["ctype", "pdo", "tokenizer", "xml"];
 
     private readonly StackPaths paths;
     private readonly JsonSerializerOptions jsonOptions = new() { WriteIndented = true };
