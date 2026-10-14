@@ -18,6 +18,7 @@ public sealed class SmtpCaptureService : IAsyncDisposable
     }
 
     public event EventHandler<string>? MessageCaptured;
+    public event EventHandler? StatusChanged;
 
     public bool IsRunning => listener is not null;
 
@@ -32,6 +33,7 @@ public sealed class SmtpCaptureService : IAsyncDisposable
         cancellation = new CancellationTokenSource();
         listener = new TcpListener(IPAddress.Loopback, port);
         listener.Start();
+        StatusChanged?.Invoke(this, EventArgs.Empty);
         _ = AcceptConnectionsAsync(listener, cancellation.Token);
     }
 
@@ -44,6 +46,7 @@ public sealed class SmtpCaptureService : IAsyncDisposable
         currentCancellation?.Cancel();
         currentListener?.Stop();
         currentCancellation?.Dispose();
+        StatusChanged?.Invoke(this, EventArgs.Empty);
         await Task.CompletedTask;
     }
 

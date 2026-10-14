@@ -89,7 +89,11 @@ powershell -ExecutionPolicy Bypass -File .\scripts\show-database-password.ps1
 When MariaDB is running, the DevStack control panel also provides **Set root
 password**. The new password must contain at least 8 characters.
 
-The control panel also provides **PHP extensions** and **OPcache settings**.
+The control panel also provides **PHP extensions**, **OPcache settings**, and
+**Port settings**. Apache defaults to port `8080` and MariaDB to `3307`; both
+can be changed to common ports such as `80` and `3306`. DevStack checks that a
+new port is available before saving it, and the services must be stopped before
+changing ports.
 
 ### SMTP mail capture
 

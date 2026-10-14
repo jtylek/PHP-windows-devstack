@@ -1,5 +1,13 @@
 namespace DevStack.Core;
 
-public sealed record StackOptions(
-    int HttpPort = 8080,
-    int MariaDbPort = 3307);
+public sealed class StackOptions
+{
+    public StackOptions(int httpPort = 8080, int mariaDbPort = 3307)
+    {
+        HttpPort = httpPort;
+        MariaDbPort = mariaDbPort;
+    }
+
+    public int HttpPort { get; set; }
+    public int MariaDbPort { get; set; }
+}

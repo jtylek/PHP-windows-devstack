@@ -12,20 +12,25 @@ public partial class MainWindow : Window
     private static readonly Brush RunningBrush = new SolidColorBrush(Color.FromRgb(2, 122, 72));
     private static readonly Brush StoppedBrush = new SolidColorBrush(Color.FromRgb(180, 35, 24));
     private readonly StackController controller;
+    private readonly StackOptions options;
+    private readonly PortSettingsManager portSettings;
     private readonly MariaDbPasswordManager passwordManager;
     private readonly PhpConfigurationManager phpConfiguration;
     private readonly SmtpCaptureService smtpCapture;
+    private SmtpCaptureWindow? smtpCaptureWindow;
 
     public MainWindow()
     {
         InitializeComponent();
         var paths = StackPaths.FromApplicationDirectory();
-        var options = new StackOptions();
+        portSettings = new PortSettingsManager(paths);
+        options = portSettings.Load();
         controller = new StackController(paths, options);
         passwordManager = new MariaDbPasswordManager(paths, options);
         phpConfiguration = new PhpConfigurationManager(paths);
         smtpCapture = new SmtpCaptureService(paths.SmtpRoot);
         smtpCapture.MessageCaptured += (_, path) => Dispatcher.Invoke(() => AppendLog($"SMTP message captured: {Path.GetFileName(path)}"));
+        smtpCapture.StatusChanged += (_, _) => Dispatcher.Invoke(UpdateStatus);
         controller.OutputReceived += (_, line) => Dispatcher.Invoke(() => AppendLog(line));
         controller.StatusChanged += (_, _) => Dispatcher.Invoke(UpdateStatus);
         VersionSummary.Text = LoadVersionSummary(paths);
@@ -126,10 +131,10 @@ public partial class MainWindow : Window
             MessageBoxImage.Information);
 
     private void OpenBrowser_Click(object sender, RoutedEventArgs e) =>
-        Process.Start(new ProcessStartInfo("http://127.0.0.1:8080") { UseShellExecute = true });
+        Process.Start(new ProcessStartInfo($"http://127.0.0.1:{options.HttpPort}") { UseShellExecute = true });
 
     private void OpenPhpMyAdmin_Click(object sender, RoutedEventArgs e) =>
-        Process.Start(new ProcessStartInfo("http://127.0.0.1:8080/phpmyadmin") { UseShellExecute = true });
+        Process.Start(new ProcessStartInfo($"http://127.0.0.1:{options.HttpPort}/phpmyadmin") { UseShellExecute = true });
 
     private void StartApache_Click(object sender, RoutedEventArgs e)
     {
@@ -233,11 +238,79 @@ public partial class MainWindow : Window
         }
     }
 
+    private void PortsSettings_Click(object sender, RoutedEventArgs e)
+    {
+        if (controller.IsApacheRunning || controller.IsMariaDbRunning)
+        {
+            MessageBox.Show(this, "Stop Apache and MariaDB before changing their ports.", "Services must be stopped", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        var dialog = new PortsSettingsWindow(options.HttpPort, options.MariaDbPort) { Owner = this };
+        if (dialog.ShowDialog() != true)
+        {
+            return;
+        }
+
+        try
+        {
+            portSettings.Save(options, dialog.ApachePort, dialog.MariaDbPort);
+            options.HttpPort = dialog.ApachePort;
+            options.MariaDbPort = dialog.MariaDbPort;
+            portSettings.UpdatePhpMyAdminPort(options.MariaDbPort);
+            AppendLog($"Ports saved: Apache {options.HttpPort}, MariaDB {options.MariaDbPort}.");
+            UpdateStatus();
+        }
+        catch (Exception exception)
+        {
+            AppendLog($"Port settings were not saved: {exception.Message}");
+            MessageBox.Show(this, exception.Message, "Could not change ports", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
+
     private void SmtpCapture_Click(object sender, RoutedEventArgs e)
     {
-        var dialog = new SmtpCaptureWindow(smtpCapture) { Owner = this };
-        dialog.ShowDialog();
+        if (smtpCaptureWindow is { IsVisible: true })
+        {
+            smtpCaptureWindow.Activate();
+            return;
+        }
+
+        smtpCaptureWindow = new SmtpCaptureWindow(smtpCapture) { Owner = this };
+        smtpCaptureWindow.Show();
         UpdateStatus();
+    }
+
+    private void StartSmtp_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            smtpCapture.Start();
+            AppendLog("SMTP capture started on 127.0.0.1:25.");
+        }
+        catch (Exception exception)
+        {
+            AppendLog($"SMTP capture start failed: {exception.Message}");
+            MessageBox.Show(this, exception.Message, "SMTP capture could not start", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+        finally
+        {
+            UpdateStatus();
+        }
+    }
+
+    private async void StopSmtp_Click(object sender, RoutedEventArgs e)
+    {
+        StopSmtpButton.IsEnabled = false;
+        try
+        {
+            await smtpCapture.StopAsync();
+            AppendLog("SMTP capture stopped.");
+        }
+        finally
+        {
+            UpdateStatus();
+        }
     }
 
     private async Task OfferRestartAsync()
@@ -310,8 +383,11 @@ public partial class MainWindow : Window
         OpenBrowserButton.IsEnabled = controller.IsApacheRunning;
         OpenPhpMyAdminButton.IsEnabled = controller.IsApacheRunning;
         ChangeRootPasswordButton.IsEnabled = controller.IsMariaDbRunning;
-        SmtpStatus.Text = smtpCapture.IsRunning ? "SMTP listening on 127.0.0.1:25" : "SMTP stopped";
-        SmtpStatus.Foreground = smtpCapture.IsRunning ? RunningBrush : StoppedBrush;
+        ApacheEndpoint.Text = $"127.0.0.1:{options.HttpPort}";
+        MariaDbEndpoint.Text = $"127.0.0.1:{options.MariaDbPort}";
+        SetStatus(SmtpCardStatus, smtpCapture.IsRunning);
+        StartSmtpButton.IsEnabled = !smtpCapture.IsRunning;
+        StopSmtpButton.IsEnabled = smtpCapture.IsRunning;
     }
 
     private static void SetStatus(System.Windows.Controls.TextBlock label, bool running)
@@ -328,6 +404,7 @@ public partial class MainWindow : Window
 
     protected override void OnClosed(EventArgs e)
     {
+        smtpCaptureWindow?.Close();
         smtpCapture.StopAsync().GetAwaiter().GetResult();
         controller.Dispose();
         base.OnClosed(e);
