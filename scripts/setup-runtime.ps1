@@ -174,6 +174,8 @@ Write-ProgressState -Completed 7 -Total 7 -Message 'DevStack is ready.'
 Write-Host 'DevStack runtime setup completed.'
 }
 catch {
+    Write-Host "ERROR: $($_.Exception.Message)"
+    Write-Host 'Runtime setup failed. Review setup-runtime.log for the complete error.'
     Write-ProgressState -Completed 0 -Total 7 -Message "Setup failed: $($_.Exception.Message)"
     throw
 }

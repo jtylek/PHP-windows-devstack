@@ -69,7 +69,6 @@ foreach ($item in $selected) {
 
     try {
         Write-Host "Downloading $($item.displayName) $($item.version)..."
-        $webClient = [Net.WebClient]::new()
         $progressHandler = [System.Net.DownloadProgressChangedEventHandler]{
             param($sender, $event)
             $percent = $event.ProgressPercentage
@@ -84,15 +83,31 @@ foreach ($item in $selected) {
                 -Status "$($item.displayName): $percent% ($received MB$total)" `
                 -PercentComplete $percent
         }
-        $webClient.add_DownloadProgressChanged($progressHandler)
-        try {
-            $webClient.DownloadFile($item.archiveUrl, $archivePath)
+        $downloadSucceeded = $false
+        for ($attempt = 1; $attempt -le 3 -and -not $downloadSucceeded; $attempt++) {
+            $webClient = [Net.WebClient]::new()
+            $webClient.add_DownloadProgressChanged($progressHandler)
+            try {
+                $webClient.DownloadFile($item.archiveUrl, $archivePath)
+                $downloadSucceeded = $true
+            }
+            catch {
+                if ($attempt -eq 3) {
+                    throw "Could not download $($item.displayName) from '$($item.archiveUrl)' after $attempt attempts. $($_.Exception.Message)"
+                }
+
+                Write-Host "Download attempt $attempt failed for $($item.displayName): $($_.Exception.Message) Retrying..."
+                if (Test-Path -LiteralPath $archivePath) {
+                    Remove-Item -LiteralPath $archivePath -Force -ErrorAction SilentlyContinue
+                }
+                Start-Sleep -Seconds ($attempt * 2)
+            }
+            finally {
+                $webClient.remove_DownloadProgressChanged($progressHandler)
+                $webClient.Dispose()
+            }
         }
-        finally {
-            $webClient.remove_DownloadProgressChanged($progressHandler)
-            $webClient.Dispose()
-            Write-Progress -Id 1 -Activity "Downloading DevStack components" -Completed
-        }
+        Write-Progress -Id 1 -Activity "Downloading DevStack components" -Completed
         Write-Host "Downloaded $($item.displayName). Verifying SHA-256..."
 
         $actualHash = Get-Sha256Hex $archivePath
