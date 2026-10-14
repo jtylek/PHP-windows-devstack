@@ -10,9 +10,13 @@ public sealed record OpcacheSettings(
     int InternedStringsBufferMb = 32,
     int MaxAcceleratedFiles = 20000,
     int RevalidateFrequencySeconds = 2,
+    bool ValidateTimestamps = true,
+    int RealpathCacheSizeKb = 4096,
     int RealpathCacheTtlSeconds = 600,
     int ZendAssertions = -1,
-    bool DisplayErrors = false);
+    bool DisplayErrors = false,
+    int MemoryLimitMb = 256,
+    bool ExposePhp = false);
 
 public sealed class PhpConfigurationManager
 {
@@ -80,6 +84,10 @@ public sealed class PhpConfigurationManager
         {
             throw new ArgumentOutOfRangeException(nameof(settings), "OPcache revalidation must be between 0 and 3600 seconds.");
         }
+        if (settings.RealpathCacheSizeKb < 256 || settings.RealpathCacheSizeKb > 1048576)
+        {
+            throw new ArgumentOutOfRangeException(nameof(settings), "Realpath cache size must be between 256 and 1,048,576 KB.");
+        }
         if (settings.RealpathCacheTtlSeconds < 0 || settings.RealpathCacheTtlSeconds > 86400)
         {
             throw new ArgumentOutOfRangeException(nameof(settings), "Realpath cache TTL must be between 0 and 86400 seconds.");
@@ -87,6 +95,10 @@ public sealed class PhpConfigurationManager
         if (settings.ZendAssertions is not (-1 or 0 or 1))
         {
             throw new ArgumentOutOfRangeException(nameof(settings), "zend.assertions must be -1, 0, or 1.");
+        }
+        if (settings.MemoryLimitMb < 8 || settings.MemoryLimitMb > 16384)
+        {
+            throw new ArgumentOutOfRangeException(nameof(settings), "PHP memory limit must be between 8 and 16,384 MB.");
         }
 
         var saved = LoadSettings();
@@ -115,7 +127,8 @@ public sealed class PhpConfigurationManager
             $"opcache.memory_consumption={settings.MemoryConsumptionMb}",
             $"opcache.interned_strings_buffer={settings.InternedStringsBufferMb}",
             $"opcache.max_accelerated_files={settings.MaxAcceleratedFiles}",
-            $"opcache.revalidate_freq={settings.RevalidateFrequencySeconds}"
+            $"opcache.revalidate_freq={settings.RevalidateFrequencySeconds}",
+            $"opcache.validate_timestamps={(settings.ValidateTimestamps ? 1 : 0)}"
         ]);
     }
 
@@ -125,9 +138,12 @@ public sealed class PhpConfigurationManager
         return string.Join(Environment.NewLine,
         [
             $"realpath_cache_ttl={settings.RealpathCacheTtlSeconds}",
+            $"realpath_cache_size={settings.RealpathCacheSizeKb}K",
             $"zend.assertions={settings.ZendAssertions}",
             $"display_errors={(settings.DisplayErrors ? "On" : "Off")}",
-            $"display_startup_errors={(settings.DisplayErrors ? "On" : "Off")}"
+            $"display_startup_errors={(settings.DisplayErrors ? "On" : "Off")}",
+            $"memory_limit={settings.MemoryLimitMb}M",
+            $"expose_php={(settings.ExposePhp ? "On" : "Off")}"
         ]);
     }
 
