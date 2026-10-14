@@ -3,9 +3,11 @@ using System.Security.AccessControl;
 using System.Security.Cryptography;
 using System.Security.Principal;
 using System.Text;
+using System.Runtime.Versioning;
 
 namespace DevStack.Core;
 
+[SupportedOSPlatform("windows")]
 public sealed class MariaDbPasswordManager
 {
     private readonly StackPaths paths;
@@ -163,6 +165,6 @@ public sealed class MariaDbPasswordManager
             user,
             FileSystemRights.Read | FileSystemRights.Write | FileSystemRights.Delete,
             AccessControlType.Allow));
-        File.SetAccessControl(path, security);
+        new FileInfo(path).SetAccessControl(security);
     }
 }
