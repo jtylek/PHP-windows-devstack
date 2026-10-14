@@ -56,12 +56,17 @@ public partial class MainWindow : Window
     private void OpenBrowser_Click(object sender, RoutedEventArgs e) =>
         Process.Start(new ProcessStartInfo("http://127.0.0.1:8080") { UseShellExecute = true });
 
+    private void OpenPhpMyAdmin_Click(object sender, RoutedEventArgs e) =>
+        Process.Start(new ProcessStartInfo("http://127.0.0.1:8080/phpmyadmin") { UseShellExecute = true });
+
     private void UpdateStatus()
     {
         SetStatus(ApacheStatus, controller.IsApacheRunning);
         SetStatus(MariaDbStatus, controller.IsMariaDbRunning);
         StartButton.IsEnabled = !controller.IsApacheRunning && !controller.IsMariaDbRunning;
         StopButton.IsEnabled = controller.IsApacheRunning || controller.IsMariaDbRunning;
+        OpenBrowserButton.IsEnabled = controller.IsApacheRunning;
+        OpenPhpMyAdminButton.IsEnabled = controller.IsApacheRunning;
     }
 
     private static void SetStatus(System.Windows.Controls.TextBlock label, bool running)
