@@ -1,0 +1,124 @@
+:root {
+    color-scheme: light;
+    font-family: "Segoe UI", system-ui, sans-serif;
+    color: #172033;
+    background: #f4f7fb;
+}
+
+* { box-sizing: border-box; }
+
+body {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 48px 28px 32px;
+}
+
+header {
+    border-bottom: 1px solid #dce3ee;
+    padding-bottom: 22px;
+}
+
+.logo {
+    color: #172033;
+    text-decoration: none;
+}
+
+.logo h2 {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 650;
+}
+
+.subtitle {
+    color: #66748b;
+    margin: 6px 0 0;
+}
+
+main { padding-top: 32px; }
+
+.intro h1 {
+    margin: 0;
+    font-size: 24px;
+}
+
+.intro p { color: #66748b; margin: 8px 0 24px; }
+
+code {
+    background: #e8eef7;
+    border-radius: 4px;
+    padding: 2px 6px;
+    color: #344054;
+}
+
+.project-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 14px;
+}
+
+.project-card {
+    align-items: center;
+    background: #fff;
+    border: 1px solid #dce3ee;
+    border-radius: 10px;
+    color: inherit;
+    display: flex;
+    gap: 13px;
+    min-height: 82px;
+    padding: 16px;
+    text-decoration: none;
+    transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
+}
+
+.project-card:hover {
+    border-color: #2e90fa;
+    box-shadow: 0 5px 18px rgba(27, 65, 115, .12);
+    transform: translateY(-1px);
+}
+
+.project-icon {
+    align-items: center;
+    background: #eaf2ff;
+    border-radius: 8px;
+    color: #175cd3;
+    display: flex;
+    font-family: Consolas, monospace;
+    font-size: 13px;
+    font-weight: 700;
+    height: 42px;
+    justify-content: center;
+    width: 42px;
+}
+
+.project-details {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.project-details strong { overflow-wrap: anywhere; }
+.project-details small { color: #66748b; }
+.arrow { color: #98a2b3; font-size: 20px; }
+
+.empty-state {
+    background: #fff;
+    border: 1px dashed #b7c3d4;
+    border-radius: 10px;
+    color: #66748b;
+    padding: 24px;
+}
+
+.empty-state p { margin: 4px 0; }
+
+footer {
+    color: #98a2b3;
+    font-size: 13px;
+    margin-top: 38px;
+}
+
+@media (max-width: 560px) {
+    body { padding: 28px 18px; }
+    .project-grid { grid-template-columns: 1fr; }
+}

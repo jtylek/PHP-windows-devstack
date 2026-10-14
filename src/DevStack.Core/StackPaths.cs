@@ -13,6 +13,7 @@ public sealed record StackPaths(string Root)
     public string MariaDbDataRoot => Path.Combine(DataRoot, "mariadb");
     public string LogRoot => Path.Combine(Root, "logs");
     public string SessionRoot => Path.Combine(DataRoot, "sessions");
+    public string SmtpRoot => Path.Combine(DataRoot, "smtp");
     public string WebRoot => Path.Combine(Root, "www");
 
     public static StackPaths FromApplicationDirectory() =>

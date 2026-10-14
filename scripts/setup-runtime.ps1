@@ -46,6 +46,104 @@ function Write-ProgressState {
 }
 
 try {
+$pmaStorageConfig = $null
+
+function Read-ProtectedPassword {
+    param([Parameter(Mandatory)][string]$Path)
+
+    Add-Type -AssemblyName System.Security
+    $protectedBytes = [System.IO.File]::ReadAllBytes($Path)
+    try {
+        $passwordBytes = [Security.Cryptography.ProtectedData]::Unprotect($protectedBytes, $null, [Security.Cryptography.DataProtectionScope]::CurrentUser)
+        try { return [Text.Encoding]::UTF8.GetString($passwordBytes) }
+        finally { [Security.Cryptography.CryptographicOperations]::ZeroMemory($passwordBytes) }
+    }
+    finally { [Security.Cryptography.CryptographicOperations]::ZeroMemory($protectedBytes) }
+}
+
+function New-RandomHexSecret {
+    param([int]$ByteCount = 24)
+    $bytes = New-Object byte[] $ByteCount
+    $random = [Security.Cryptography.RandomNumberGenerator]::Create()
+    try {
+        $random.GetBytes($bytes)
+        return ([BitConverter]::ToString($bytes)).Replace('-', '').ToLowerInvariant()
+    }
+    finally {
+        $random.Dispose()
+        [Security.Cryptography.CryptographicOperations]::ZeroMemory($bytes)
+    }
+}
+
+function Escape-SqlLiteral {
+    param([Parameter(Mandatory)][string]$Value)
+    return $Value.Replace('\', '\\').Replace("'", "''")
+}
+
+function Initialize-PhpMyAdminStorage {
+    param(
+        [Parameter(Mandatory)][string]$InstallRoot,
+        [Parameter(Mandatory)][string]$RuntimeRoot,
+        [Parameter(Mandatory)][string]$PhpMyAdminRoot,
+        [Parameter(Mandatory)][string]$RootPassword
+    )
+
+    $mariaRoot = Join-Path $RuntimeRoot 'mariadb'
+    $serverPath = Join-Path $mariaRoot 'bin/mariadbd.exe'
+    $clientPath = Join-Path $mariaRoot 'bin/mariadb.exe'
+    $dataDirectory = Join-Path $InstallRoot 'data/mariadb'
+    $logsDirectory = Join-Path $InstallRoot 'logs'
+    $temporaryRoot = Join-Path ([IO.Path]::GetTempPath()) ("devstack-pma-" + [Guid]::NewGuid().ToString('N'))
+    $serverConfig = Join-Path $temporaryRoot 'mariadb.ini'
+    $clientConfig = Join-Path $temporaryRoot 'client.cnf'
+    $server = $null
+
+    [IO.Directory]::CreateDirectory($temporaryRoot) | Out-Null
+    try {
+        $configLines = @(
+            '[mariadbd]',
+            ('basedir="{0}"' -f $mariaRoot.Replace('\', '/')),
+            ('datadir="{0}"' -f $dataDirectory.Replace('\', '/')),
+            'port=3307',
+            'bind-address=127.0.0.1',
+            'skip-name-resolve',
+            ('log-error="{0}/mariadb-error.log"' -f $logsDirectory.Replace('\', '/'))
+        )
+        $configLines | Set-Content -LiteralPath $serverConfig -Encoding utf8
+        "[client]`npassword=$RootPassword" | Set-Content -LiteralPath $clientConfig -Encoding utf8
+
+        Write-Host 'Starting MariaDB temporarily for phpMyAdmin configuration storage...'
+        $server = Start-Process -FilePath $serverPath -ArgumentList "--defaults-file=$serverConfig", '--console' -WorkingDirectory $mariaRoot -WindowStyle Hidden -PassThru
+        $ready = $false
+        for ($attempt = 0; $attempt -lt 30; $attempt++) {
+            Start-Sleep -Seconds 1
+            & $clientPath "--defaults-extra-file=$clientConfig" --protocol=tcp --host=127.0.0.1 --port=3307 --user=root --batch --skip-column-names -e 'SELECT 1' *> $null
+            if ($LASTEXITCODE -eq 0) { $ready = $true; break }
+        }
+        if (-not $ready) { throw 'MariaDB did not become ready for phpMyAdmin configuration storage.' }
+
+        $pmaPassword = New-RandomHexSecret -ByteCount 24
+        $escapedPassword = Escape-SqlLiteral $pmaPassword
+        $sql = "CREATE DATABASE IF NOT EXISTS ``phpmyadmin`` DEFAULT CHARACTER SET utf8 COLLATE utf8_bin; CREATE USER IF NOT EXISTS 'pma'@'127.0.0.1' IDENTIFIED BY '$escapedPassword'; ALTER USER 'pma'@'127.0.0.1' IDENTIFIED BY '$escapedPassword'; GRANT SELECT, INSERT, UPDATE, DELETE, ALTER, CREATE, INDEX, DROP ON ``phpmyadmin``.* TO 'pma'@'127.0.0.1'; FLUSH PRIVILEGES;"
+        $sql | & $clientPath "--defaults-extra-file=$clientConfig" --protocol=tcp --host=127.0.0.1 --port=3307 --user=root --batch 2>&1
+        if ($LASTEXITCODE -ne 0) { throw 'Could not create the phpMyAdmin configuration-storage user.' }
+
+        $schemaPath = Join-Path $PhpMyAdminRoot 'sql/create_tables.sql'
+        if (-not (Test-Path -LiteralPath $schemaPath -PathType Leaf)) { throw "phpMyAdmin configuration-storage schema is missing: $schemaPath" }
+        Get-Content -LiteralPath $schemaPath -Raw | & $clientPath "--defaults-extra-file=$clientConfig" --protocol=tcp --host=127.0.0.1 --port=3307 --user=root --batch 2>&1
+        if ($LASTEXITCODE -ne 0) { throw 'Could not import the phpMyAdmin configuration-storage schema.' }
+
+        return @{ User = 'pma'; Password = $pmaPassword }
+    }
+    finally {
+        if ($server -and -not $server.HasExited) {
+            Stop-Process -Id $server.Id -Force -ErrorAction SilentlyContinue
+            $server.WaitForExit(5000)
+        }
+        Remove-Item -LiteralPath $temporaryRoot -Recurse -Force -ErrorAction SilentlyContinue
+    }
+}
+
 $runtimeRoot = Join-Path $installFullPath 'runtime'
 $manifestPath = Join-Path $runtimeRoot 'manifest/components.json'
 $installer = Join-Path $PSScriptRoot 'install-runtime.ps1'
@@ -164,6 +262,37 @@ if (-not (Test-Path -LiteralPath $systemDatabase -PathType Container)) {
     [Array]::Clear($passwordBytes, 0, $passwordBytes.Length)
     $rootPassword = $null
 }
+
+$rootPasswordPath = Join-Path $installFullPath 'data/secrets/mariadb-root-password.dpapi'
+$rootPassword = Read-ProtectedPassword -Path $rootPasswordPath
+$pmaStorageConfig = Initialize-PhpMyAdminStorage -InstallRoot $installFullPath -RuntimeRoot $runtimeRoot -PhpMyAdminRoot $phpMyAdminRoot -RootPassword $rootPassword
+$storageLines = @(
+    "`$cfg['Servers'][`$i]['controluser'] = '$($pmaStorageConfig.User)';",
+    "`$cfg['Servers'][`$i]['controlpass'] = '$($pmaStorageConfig.Password)';",
+    "`$cfg['Servers'][`$i]['pmadb'] = 'phpmyadmin';",
+    "`$cfg['Servers'][`$i]['bookmarktable'] = 'pma__bookmark';",
+    "`$cfg['Servers'][`$i]['relation'] = 'pma__relation';",
+    "`$cfg['Servers'][`$i]['table_info'] = 'pma__table_info';",
+    "`$cfg['Servers'][`$i]['table_coords'] = 'pma__table_coords';",
+    "`$cfg['Servers'][`$i]['pdf_pages'] = 'pma__pdf_pages';",
+    "`$cfg['Servers'][`$i]['column_info'] = 'pma__column_info';",
+    "`$cfg['Servers'][`$i]['history'] = 'pma__history';",
+    "`$cfg['Servers'][`$i]['table_uiprefs'] = 'pma__table_uiprefs';",
+    "`$cfg['Servers'][`$i]['tracking'] = 'pma__tracking';",
+    "`$cfg['Servers'][`$i]['userconfig'] = 'pma__userconfig';",
+    "`$cfg['Servers'][`$i]['recent'] = 'pma__recent';",
+    "`$cfg['Servers'][`$i]['favorite'] = 'pma__favorite';",
+    "`$cfg['Servers'][`$i]['users'] = 'pma__users';",
+    "`$cfg['Servers'][`$i]['usergroups'] = 'pma__usergroups';",
+    "`$cfg['Servers'][`$i]['navigationhiding'] = 'pma__navigationhiding';",
+    "`$cfg['Servers'][`$i]['savedsearches'] = 'pma__savedsearches';",
+    "`$cfg['Servers'][`$i]['central_columns'] = 'pma__central_columns';",
+    "`$cfg['Servers'][`$i]['designer_settings'] = 'pma__designer_settings';",
+    "`$cfg['Servers'][`$i]['export_templates'] = 'pma__export_templates';"
+)
+Add-Content -LiteralPath (Join-Path $phpMyAdminRoot 'config.inc.php') -Value ($storageLines -join [Environment]::NewLine) -Encoding utf8
+[Security.Cryptography.CryptographicOperations]::ZeroMemory([Text.Encoding]::UTF8.GetBytes($rootPassword))
+$rootPassword = $null
 
 Remove-OptionalRuntimeFiles -Root $installFullPath
 Write-Host 'Finalizing runtime setup...'

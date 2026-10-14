@@ -60,7 +60,7 @@ jobs:
         run: |
           gh release view $env:RELEASE_TAG *> $null
           if ($LASTEXITCODE -ne 0) {
-            gh release create $env:RELEASE_TAG --target $env:GITHUB_SHA --prerelease --title 'DevStack 1.0 RC1' --notes 'Unsigned Windows 10/11 x64 release candidate.'
+            gh release create $env:RELEASE_TAG --target $env:GITHUB_SHA --prerelease --title 'PHP Windows DevStack 1.0 RC1' --notes 'Unsigned Windows 10/11 x64 release candidate.'
           }
           gh release upload $env:RELEASE_TAG artifacts/apache-release/* --clobber
 
@@ -87,7 +87,7 @@ jobs:
       - name: Install silently and verify runtime layout
         shell: pwsh
         run: |
-          $setup = 'artifacts/DevStack-Setup-1.0.0-rc.1-win-x64.exe'
+          $setup = 'artifacts/PHP-Windows-DevStack-Setup-1.0.0-rc.1-win-x64.exe'
           $testRoot = 'C:\ds-test'
           $installerLog = 'C:\ds-installer.log'
           $process = Start-Process $setup -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', "/DIR=$testRoot", "/LOG=$installerLog" -Wait -PassThru
@@ -114,9 +114,9 @@ jobs:
       - name: Write installer checksum
         shell: pwsh
         run: |
-          $setup = 'artifacts/DevStack-Setup-1.0.0-rc.1-win-x64.exe'
+          $setup = 'artifacts/PHP-Windows-DevStack-Setup-1.0.0-rc.1-win-x64.exe'
           $hash = (Get-FileHash $setup -Algorithm SHA256).Hash.ToLowerInvariant()
-          "$hash  DevStack-Setup-1.0.0-rc.1-win-x64.exe" | Set-Content "$setup.sha256" -Encoding ascii
+          "$hash  PHP-Windows-DevStack-Setup-1.0.0-rc.1-win-x64.exe" | Set-Content "$setup.sha256" -Encoding ascii
 
       - name: Upload setup to release
         shell: pwsh
@@ -124,16 +124,16 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release upload $env:RELEASE_TAG `
-            artifacts/DevStack-Setup-1.0.0-rc.1-win-x64.exe `
-            artifacts/DevStack-Setup-1.0.0-rc.1-win-x64.exe.sha256 `
+            artifacts/PHP-Windows-DevStack-Setup-1.0.0-rc.1-win-x64.exe `
+            artifacts/PHP-Windows-DevStack-Setup-1.0.0-rc.1-win-x64.exe.sha256 `
             --clobber
 
       - name: Upload workflow artifact
         uses: actions/upload-artifact@v4
         with:
-          name: DevStack-Setup-1.0.0-rc.1-win-x64
+          name: PHP-Windows-DevStack-Setup-1.0.0-rc.1-win-x64
           path: |
-            artifacts/DevStack-Setup-1.0.0-rc.1-win-x64.exe
-            artifacts/DevStack-Setup-1.0.0-rc.1-win-x64.exe.sha256
+            artifacts/PHP-Windows-DevStack-Setup-1.0.0-rc.1-win-x64.exe
+            artifacts/PHP-Windows-DevStack-Setup-1.0.0-rc.1-win-x64.exe.sha256
           if-no-files-found: error
           retention-days: 14

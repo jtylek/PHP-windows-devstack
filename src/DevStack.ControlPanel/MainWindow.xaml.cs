@@ -14,6 +14,7 @@ public partial class MainWindow : Window
     private readonly StackController controller;
     private readonly MariaDbPasswordManager passwordManager;
     private readonly PhpConfigurationManager phpConfiguration;
+    private readonly SmtpCaptureService smtpCapture;
 
     public MainWindow()
     {
@@ -23,6 +24,8 @@ public partial class MainWindow : Window
         controller = new StackController(paths, options);
         passwordManager = new MariaDbPasswordManager(paths, options);
         phpConfiguration = new PhpConfigurationManager(paths);
+        smtpCapture = new SmtpCaptureService(paths.SmtpRoot);
+        smtpCapture.MessageCaptured += (_, path) => Dispatcher.Invoke(() => AppendLog($"SMTP message captured: {Path.GetFileName(path)}"));
         controller.OutputReceived += (_, line) => Dispatcher.Invoke(() => AppendLog(line));
         controller.StatusChanged += (_, _) => Dispatcher.Invoke(UpdateStatus);
         VersionSummary.Text = LoadVersionSummary(paths);
@@ -111,16 +114,14 @@ public partial class MainWindow : Window
     }
 
     private void RepositoryLink_Click(object sender, RoutedEventArgs e) =>
-        Process.Start(new ProcessStartInfo("https://github.com/jtylek/devstack-windows") { UseShellExecute = true });
+        Process.Start(new ProcessStartInfo("https://github.com/jtylek/PHP-windows-devstack") { UseShellExecute = true });
 
     private void About_Click(object sender, RoutedEventArgs e) =>
         MessageBox.Show(
             this,
-            "DevStack is a Windows development environment for PHP developers who want to use PHP 8.5. " +
-            "It is an alternative to XAMPP, whose Windows download page lists packages with PHP " +
-            "8.0.30, 8.1.25 and 8.2.12.\n\n" +
-            "XAMPP downloads: https://www.apachefriends.org/download.html",
-            "About DevStack",
+            "PHP Windows DevStack is a native, portable Windows development environment for PHP applications.\n\n" +
+            "It includes Apache HTTP Server, PHP 8.5, MariaDB, and a desktop control panel.",
+            "About PHP Windows DevStack",
             MessageBoxButton.OK,
             MessageBoxImage.Information);
 
@@ -232,6 +233,13 @@ public partial class MainWindow : Window
         }
     }
 
+    private void SmtpCapture_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new SmtpCaptureWindow(smtpCapture) { Owner = this };
+        dialog.ShowDialog();
+        UpdateStatus();
+    }
+
     private async Task OfferRestartAsync()
     {
         if (!controller.IsApacheRunning)
@@ -302,6 +310,8 @@ public partial class MainWindow : Window
         OpenBrowserButton.IsEnabled = controller.IsApacheRunning;
         OpenPhpMyAdminButton.IsEnabled = controller.IsApacheRunning;
         ChangeRootPasswordButton.IsEnabled = controller.IsMariaDbRunning;
+        SmtpStatus.Text = smtpCapture.IsRunning ? "SMTP listening on 127.0.0.1:25" : "SMTP stopped";
+        SmtpStatus.Foreground = smtpCapture.IsRunning ? RunningBrush : StoppedBrush;
     }
 
     private static void SetStatus(System.Windows.Controls.TextBlock label, bool running)
@@ -318,6 +328,7 @@ public partial class MainWindow : Window
 
     protected override void OnClosed(EventArgs e)
     {
+        smtpCapture.StopAsync().GetAwaiter().GetResult();
         controller.Dispose();
         base.OnClosed(e);
     }

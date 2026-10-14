@@ -1,12 +1,8 @@
-# DevStack for Windows
+# PHP Windows DevStack
 
-DevStack is a native, portable Windows development environment for PHP
+PHP Windows DevStack is a native, portable Windows development environment for PHP
 applications. The runtime combines Apache HTTP Server, PHP 8.5 and MariaDB
 behind a small desktop control panel.
-
-DevStack is an alternative to XAMPP for Windows PHP developers who want to use
-PHP 8.5. The [XAMPP for Windows download page](https://www.apachefriends.org/download.html)
-lists packages with PHP 8.0.30, 8.1.25 and 8.2.12.
 
 > Project status: unsigned release candidate. The automated distribution is intended for
 > Windows 10/11 x64 testing and is not ready for production use.
@@ -70,7 +66,7 @@ To validate the expected repository and package layout:
 
 ### Nontechnical Windows installation
 
-Download the [DevStack 1.0 RC1 installer](https://github.com/jtylek/devstack-windows/releases/download/v1.0.0-rc.1/DevStack-Setup-1.0.0-rc.1-win-x64.exe) and run it. The per-user installer does not require administrator
+Download the [PHP Windows DevStack 1.0 RC1 installer](https://github.com/jtylek/PHP-windows-devstack/releases/download/v1.0.0-rc.1/PHP-Windows-DevStack-Setup-1.0.0-rc.1-win-x64.exe) and run it. The default installation directory is `C:\PHPDevStack`; installing there requires administrator
 rights. It installs a self-contained control panel, downloads checksum-pinned
 Apache, PHP and MariaDB archives, initializes a local MariaDB instance, and
 creates shortcuts automatically.
@@ -94,6 +90,10 @@ When MariaDB is running, the DevStack control panel also provides **Set root
 password**. The new password must contain at least 8 characters.
 
 The control panel also provides **PHP extensions** and **OPcache settings**.
+
+### SMTP mail capture
+
+The control panel includes **SMTP Mail Capture** for local application troubleshooting. Start it from the control panel and configure Epesi or another application to use `127.0.0.1`, port `25`, without encryption or authentication. Messages are captured locally in `data\smtp` and can be viewed, exported as `.eml`, or deleted from the capture window. The listener binds only to localhost and does not deliver mail.
 Changes are stored under `data/config` and only require restarting Apache;
 MariaDB is not restarted.
 
