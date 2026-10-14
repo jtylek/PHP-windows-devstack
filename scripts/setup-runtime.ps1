@@ -109,7 +109,7 @@ function Initialize-PhpMyAdminStorage {
             'skip-name-resolve',
             ('log-error="{0}/mariadb-error.log"' -f $logsDirectory.Replace('\', '/'))
         )
-        $configLines | Set-Content -LiteralPath $serverConfig -Encoding utf8
+        [IO.File]::WriteAllLines($serverConfig, $configLines, [Text.Encoding]::ASCII)
         $clientLines = @(
             '[client]'
             "password=$RootPassword"
