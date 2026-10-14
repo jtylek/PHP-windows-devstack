@@ -71,7 +71,7 @@ function CloseHandle(hObject: Integer): Boolean;
 
 procedure UpdateRuntimeProgress;
 var
-  ProgressText: String;
+  ProgressText: AnsiString;
   FirstSeparator: Integer;
   SecondSeparator: Integer;
   Completed: Integer;
