@@ -7,8 +7,12 @@ public sealed record PhpExtensionState(string Name, bool Enabled, bool Available
 public sealed record OpcacheSettings(
     bool Enabled = true,
     int MemoryConsumptionMb = 256,
+    int InternedStringsBufferMb = 32,
     int MaxAcceleratedFiles = 20000,
-    int RevalidateFrequencySeconds = 2);
+    int RevalidateFrequencySeconds = 2,
+    int RealpathCacheTtlSeconds = 600,
+    int ZendAssertions = -1,
+    bool DisplayErrors = false);
 
 public sealed class PhpConfigurationManager
 {
@@ -64,6 +68,10 @@ public sealed class PhpConfigurationManager
         {
             throw new ArgumentOutOfRangeException(nameof(settings), "OPcache memory must be between 8 and 4096 MB.");
         }
+        if (settings.InternedStringsBufferMb < 1 || settings.InternedStringsBufferMb > 4096)
+        {
+            throw new ArgumentOutOfRangeException(nameof(settings), "OPcache interned strings buffer must be between 1 and 4096 MB.");
+        }
         if (settings.MaxAcceleratedFiles < 100 || settings.MaxAcceleratedFiles > 1000000)
         {
             throw new ArgumentOutOfRangeException(nameof(settings), "OPcache file capacity must be between 100 and 1,000,000.");
@@ -71,6 +79,14 @@ public sealed class PhpConfigurationManager
         if (settings.RevalidateFrequencySeconds < 0 || settings.RevalidateFrequencySeconds > 3600)
         {
             throw new ArgumentOutOfRangeException(nameof(settings), "OPcache revalidation must be between 0 and 3600 seconds.");
+        }
+        if (settings.RealpathCacheTtlSeconds < 0 || settings.RealpathCacheTtlSeconds > 86400)
+        {
+            throw new ArgumentOutOfRangeException(nameof(settings), "Realpath cache TTL must be between 0 and 86400 seconds.");
+        }
+        if (settings.ZendAssertions is not (-1 or 0 or 1))
+        {
+            throw new ArgumentOutOfRangeException(nameof(settings), "zend.assertions must be -1, 0, or 1.");
         }
 
         var saved = LoadSettings();
@@ -97,9 +113,21 @@ public sealed class PhpConfigurationManager
             "opcache.enable=1",
             "opcache.enable_cli=0",
             $"opcache.memory_consumption={settings.MemoryConsumptionMb}",
-            "opcache.interned_strings_buffer=32",
+            $"opcache.interned_strings_buffer={settings.InternedStringsBufferMb}",
             $"opcache.max_accelerated_files={settings.MaxAcceleratedFiles}",
             $"opcache.revalidate_freq={settings.RevalidateFrequencySeconds}"
+        ]);
+    }
+
+    public string RenderRuntimeSettings()
+    {
+        var settings = GetOpcacheSettings();
+        return string.Join(Environment.NewLine,
+        [
+            $"realpath_cache_ttl={settings.RealpathCacheTtlSeconds}",
+            $"zend.assertions={settings.ZendAssertions}",
+            $"display_errors={(settings.DisplayErrors ? "On" : "Off")}",
+            $"display_startup_errors={(settings.DisplayErrors ? "On" : "Off")}"
         ]);
     }
 

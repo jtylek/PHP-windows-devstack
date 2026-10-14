@@ -33,6 +33,7 @@ public sealed class ConfigurationGenerator(StackPaths paths, StackOptions option
             ["LOG_ROOT"] = Normalize(paths.LogRoot),
             ["SESSION_ROOT"] = Normalize(paths.SessionRoot),
             ["PHP_EXTENSIONS"] = phpConfiguration.RenderExtensions(),
+            ["PHP_RUNTIME_SETTINGS"] = phpConfiguration.RenderRuntimeSettings(),
             ["OPCACHE_SETTINGS"] = phpConfiguration.RenderOpcache(),
             ["HTTP_PORT"] = options.HttpPort.ToString(System.Globalization.CultureInfo.InvariantCulture),
             ["MARIADB_PORT"] = options.MariaDbPort.ToString(System.Globalization.CultureInfo.InvariantCulture)
