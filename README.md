@@ -4,7 +4,7 @@ DevStack is a native, portable Windows development environment for PHP
 applications. The planned runtime combines Apache HTTP Server, PHP 8.5 and
 MariaDB behind a small desktop control panel.
 
-> Project status: unsigned alpha. The automated distribution is intended for
+> Project status: unsigned release candidate. The automated distribution is intended for
 > Windows 10/11 x64 testing and is not ready for production use.
 
 ## Initial goals
@@ -66,13 +66,13 @@ To validate the expected repository and package layout:
 
 ### Nontechnical Windows installation
 
-Download `DevStack-Setup-0.1.0-alpha.1-win-x64.exe` from the latest project
+Download `DevStack-Setup-1.0.0-rc.1-win-x64.exe` from the latest project
 release and run it. The per-user installer does not require administrator
 rights. It installs a self-contained control panel, downloads checksum-pinned
 Apache, PHP and MariaDB archives, initializes a local MariaDB instance, and
 creates shortcuts automatically.
 
-The alpha installer is not code-signed, so Windows SmartScreen may display an
+The release-candidate installer is not code-signed, so Windows SmartScreen may display an
 unknown-publisher warning. Published releases include a separate SHA-256 file.
 The setup window displays the runtime download, verification, database
 initialization and finalization phases while installation is running.

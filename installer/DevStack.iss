@@ -1,5 +1,5 @@
 #define MyAppName "DevStack"
-#define MyAppVersion "0.1.0-alpha.1"
+#define MyAppVersion "1.0.0-rc.1"
 #define MyAppPublisher "DevStack"
 #define MyAppExeName "DevStack.ControlPanel.exe"
 
@@ -20,10 +20,10 @@ SolidCompression=yes
 WizardStyle=modern
 SetupLogging=yes
 UninstallDisplayIcon={app}\{#MyAppExeName}
-VersionInfoVersion=0.1.0.1
+VersionInfoVersion=1.0.0.1
 VersionInfoDescription=DevStack online installer
 VersionInfoProductName=DevStack
-VersionInfoProductVersion=0.1.0.1
+VersionInfoProductVersion=1.0.0.1
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
