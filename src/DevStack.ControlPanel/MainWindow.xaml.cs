@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Text.Json;
 using System.Windows;
 using System.Windows.Media;
 using DevStack.Core;
@@ -23,7 +24,36 @@ public partial class MainWindow : Window
         phpConfiguration = new PhpConfigurationManager(paths);
         controller.OutputReceived += (_, line) => Dispatcher.Invoke(() => AppendLog(line));
         controller.StatusChanged += (_, _) => Dispatcher.Invoke(UpdateStatus);
+        VersionSummary.Text = LoadVersionSummary(paths);
         UpdateStatus();
+    }
+
+    private static string LoadVersionSummary(StackPaths paths)
+    {
+        var manifestPath = Path.Combine(paths.RuntimeRoot, "manifest", "components.json");
+        if (!File.Exists(manifestPath))
+        {
+            return "Apache · PHP · MariaDB";
+        }
+
+        try
+        {
+            using var document = JsonDocument.Parse(File.ReadAllText(manifestPath));
+            var versions = document.RootElement.GetProperty("components")
+                .EnumerateArray()
+                .Where(component => component.GetProperty("name").GetString() is "apache" or "php" or "mariadb")
+                .ToDictionary(
+                    component => component.GetProperty("name").GetString()!,
+                    component => component.GetProperty("version").GetString() ?? "unknown");
+
+            return $"Apache {versions.GetValueOrDefault("apache", "unknown")} · " +
+                $"PHP {versions.GetValueOrDefault("php", "unknown")} · " +
+                $"MariaDB {versions.GetValueOrDefault("mariadb", "unknown")}";
+        }
+        catch (Exception)
+        {
+            return "Apache · PHP · MariaDB";
+        }
     }
 
     private void StartAll_Click(object sender, RoutedEventArgs e)
@@ -58,6 +88,29 @@ public partial class MainWindow : Window
             UpdateStatus();
         }
     }
+
+    private async void Quit_Click(object sender, RoutedEventArgs e)
+    {
+        QuitButton.IsEnabled = false;
+        StartButton.IsEnabled = false;
+        StopButton.IsEnabled = false;
+        try
+        {
+            if (controller.IsApacheRunning || controller.IsMariaDbRunning)
+            {
+                await controller.StopAllAsync();
+            }
+
+            Close();
+        }
+        finally
+        {
+            QuitButton.IsEnabled = true;
+        }
+    }
+
+    private void RepositoryLink_Click(object sender, RoutedEventArgs e) =>
+        Process.Start(new ProcessStartInfo("https://github.com/jtylek/devstack-windows") { UseShellExecute = true });
 
     private void OpenBrowser_Click(object sender, RoutedEventArgs e) =>
         Process.Start(new ProcessStartInfo("http://127.0.0.1:8080") { UseShellExecute = true });

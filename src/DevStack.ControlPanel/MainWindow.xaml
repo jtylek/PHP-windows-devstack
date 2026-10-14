@@ -15,7 +15,10 @@
 
         <StackPanel>
             <TextBlock Text="DevStack" FontSize="28" FontWeight="SemiBold" />
-            <TextBlock Text="Apache · PHP 8.5 · MariaDB" Foreground="#52606D" Margin="0,4,0,0" />
+            <TextBlock Margin="0,2,0,0">
+                <Hyperlink Click="RepositoryLink_Click">https://github.com/jtylek/devstack-windows</Hyperlink>
+            </TextBlock>
+            <TextBlock x:Name="VersionSummary" Foreground="#52606D" Margin="0,4,0,0" />
         </StackPanel>
 
         <Grid Grid.Row="1" Margin="0,24,0,16">
@@ -75,6 +78,8 @@
                     Click="StopAll_Click" />
             <Button x:Name="StartButton" Content="Start all" Padding="18,9"
                     Background="#155EEF" Foreground="White" Click="StartAll_Click" />
+            <Button x:Name="QuitButton" Content="Quit" Padding="18,9" Margin="8,0,0,0"
+                    Click="Quit_Click" />
         </StackPanel>
     </Grid>
 </Window>
