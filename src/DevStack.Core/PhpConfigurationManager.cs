@@ -6,8 +6,8 @@ public sealed record PhpExtensionState(string Name, bool Enabled, bool Available
 
 public sealed record OpcacheSettings(
     bool Enabled = true,
-    int MemoryConsumptionMb = 128,
-    int MaxAcceleratedFiles = 10000,
+    int MemoryConsumptionMb = 256,
+    int MaxAcceleratedFiles = 20000,
     int RevalidateFrequencySeconds = 2);
 
 public sealed class PhpConfigurationManager
@@ -86,7 +86,7 @@ public sealed class PhpConfigurationManager
     public string RenderOpcache()
     {
         var settings = GetOpcacheSettings();
-        if (!settings.Enabled || !File.Exists(Path.Combine(paths.PhpRoot, "ext", "php_opcache.dll")))
+        if (!settings.Enabled)
         {
             return "; OPcache disabled";
         }
@@ -97,6 +97,7 @@ public sealed class PhpConfigurationManager
             "opcache.enable=1",
             "opcache.enable_cli=0",
             $"opcache.memory_consumption={settings.MemoryConsumptionMb}",
+            "opcache.interned_strings_buffer=32",
             $"opcache.max_accelerated_files={settings.MaxAcceleratedFiles}",
             $"opcache.revalidate_freq={settings.RevalidateFrequencySeconds}"
         ]);
