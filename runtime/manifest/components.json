@@ -67,6 +67,27 @@
         "bin/mariadb-install-db.exe"
       ],
       "status": "ready"
+    },
+    {
+      "name": "phpmyadmin",
+      "displayName": "phpMyAdmin",
+      "version": "5.2.3",
+      "platform": "windows",
+      "architecture": "any",
+      "variant": "english",
+      "enabled": true,
+      "archiveType": "zip",
+      "sourcePage": "https://www.phpmyadmin.net/files/5.2.3/",
+      "archiveUrl": "https://files.phpmyadmin.net/phpMyAdmin/5.2.3/phpMyAdmin-5.2.3-english.zip",
+      "sha256": "a59e54436489a9676edc0a8b2294ade4092bdad1c25919f857b20ec96b944920",
+      "targetDirectory": "phpmyadmin",
+      "stripTopDirectory": true,
+      "requiredFiles": [
+        "index.php",
+        "config.sample.inc.php"
+      ],
+      "status": "ready",
+      "notes": "English-only stable release downloaded from the official phpMyAdmin distribution site."
     }
   ]
 }

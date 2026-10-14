@@ -75,6 +75,20 @@ creates shortcuts automatically.
 The alpha installer is not code-signed, so Windows SmartScreen may display an
 unknown-publisher warning. Published releases include a separate SHA-256 file.
 
+### phpMyAdmin and databases
+
+After starting DevStack, open `http://127.0.0.1:8080/phpmyadmin`. Log in with
+username `root`. To display the generated root password for the current Windows
+user, run:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\show-database-password.ps1
+```
+
+In phpMyAdmin, open the **Databases** tab, enter a database name, and choose
+**Create**. phpMyAdmin is installed as the English-only stable 5.2.3 package;
+the installer verifies its SHA-256 checksum before extraction.
+
 ### Developer installation
 
 The manifest pins Apache 2.4.69, PHP 8.5.11 Thread Safe x64 and MariaDB 11.8.9

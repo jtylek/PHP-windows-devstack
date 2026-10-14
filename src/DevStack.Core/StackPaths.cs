@@ -4,6 +4,7 @@ public sealed record StackPaths(string Root)
 {
     public string RuntimeRoot => Path.Combine(Root, "runtime");
     public string ApacheRoot => Path.Combine(RuntimeRoot, "apache");
+    public string PhpMyAdminRoot => Path.Combine(Root, "phpmyadmin");
     public string PhpRoot => Path.Combine(RuntimeRoot, "php");
     public string MariaDbRoot => Path.Combine(RuntimeRoot, "mariadb");
     public string TemplateRoot => Path.Combine(RuntimeRoot, "templates");

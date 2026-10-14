@@ -4,6 +4,7 @@ ServerName localhost:{{HTTP_PORT}}
 
 LoadModule authz_core_module modules/mod_authz_core.so
 LoadModule authz_host_module modules/mod_authz_host.so
+LoadModule alias_module modules/mod_alias.so
 LoadModule dir_module modules/mod_dir.so
 LoadModule log_config_module modules/mod_log_config.so
 LoadModule mime_module modules/mod_mime.so
@@ -18,6 +19,13 @@ DocumentRoot "{{WWW_ROOT}}"
 <Directory "{{WWW_ROOT}}">
     Options Indexes FollowSymLinks
     AllowOverride All
+    Require local
+</Directory>
+
+Alias /phpmyadmin "{{PHPMYADMIN_ROOT}}"
+<Directory "{{PHPMYADMIN_ROOT}}">
+    Options FollowSymLinks
+    AllowOverride None
     Require local
 </Directory>
 

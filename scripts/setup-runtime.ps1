@@ -66,7 +66,33 @@ function Remove-OptionalRuntimeFiles {
 }
 
 Write-Host 'Downloading and verifying Apache, PHP and MariaDB...'
-& $installer -Component all -ManifestPath $manifestPath -DestinationRoot $runtimeRoot -Force
+foreach ($component in @('apache', 'php', 'mariadb')) {
+    & $installer -Component $component -ManifestPath $manifestPath -DestinationRoot $runtimeRoot -Force
+}
+& $installer -Component phpmyadmin -ManifestPath $manifestPath -DestinationRoot $installFullPath -Force
+
+$phpMyAdminRoot = Join-Path $installFullPath 'phpmyadmin'
+$secretBytes = New-Object byte[] 32
+$secretRandom = [Security.Cryptography.RandomNumberGenerator]::Create()
+try {
+    $secretRandom.GetBytes($secretBytes)
+}
+finally {
+    $secretRandom.Dispose()
+}
+$phpMyAdminSecret = ([BitConverter]::ToString($secretBytes)).Replace('-', '').ToLowerInvariant()
+$phpMyAdminConfig = @'
+<?php
+$cfg['blowfish_secret'] = sodium_hex2bin('__BLOWFISH_SECRET__');
+$i = 1;
+$cfg['Servers'][$i]['auth_type'] = 'cookie';
+$cfg['Servers'][$i]['host'] = '127.0.0.1';
+$cfg['Servers'][$i]['port'] = 3307;
+$cfg['Servers'][$i]['connect_type'] = 'tcp';
+$cfg['Servers'][$i]['AllowNoPassword'] = false;
+'@.Replace('__BLOWFISH_SECRET__', $phpMyAdminSecret)
+Set-Content -LiteralPath (Join-Path $phpMyAdminRoot 'config.inc.php') -Value $phpMyAdminConfig -Encoding utf8
+[Array]::Clear($secretBytes, 0, $secretBytes.Length)
 
 $dataDirectory = Join-Path $installFullPath 'data/mariadb'
 $systemDatabase = Join-Path $dataDirectory 'mysql'

@@ -22,6 +22,7 @@ public sealed class ConfigurationGenerator(StackPaths paths, StackOptions option
         var values = new Dictionary<string, string>(StringComparer.Ordinal)
         {
             ["APACHE_ROOT"] = Normalize(paths.ApacheRoot),
+            ["PHPMYADMIN_ROOT"] = Normalize(paths.PhpMyAdminRoot),
             ["PHP_ROOT"] = Normalize(paths.PhpRoot),
             ["MARIADB_ROOT"] = Normalize(paths.MariaDbRoot),
             ["MARIADB_DATA_ROOT"] = Normalize(paths.MariaDbDataRoot),

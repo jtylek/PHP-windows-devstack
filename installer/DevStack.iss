@@ -37,6 +37,7 @@ Source: "..\scripts\install-runtime.ps1"; DestDir: "{app}\scripts"; Flags: ignor
 Source: "..\scripts\verify-runtime-manifest.ps1"; DestDir: "{app}\scripts"; Flags: ignoreversion
 Source: "..\scripts\setup-runtime.ps1"; DestDir: "{app}\scripts"; Flags: ignoreversion
 Source: "..\scripts\trim-runtime.ps1"; DestDir: "{app}\scripts"; Flags: ignoreversion
+Source: "..\scripts\show-database-password.ps1"; DestDir: "{app}\scripts"; Flags: ignoreversion
 Source: "..\LICENSE"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\THIRD_PARTY_NOTICES.md"; DestDir: "{app}"; Flags: ignoreversion
 
