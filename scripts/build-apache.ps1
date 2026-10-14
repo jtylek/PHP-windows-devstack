@@ -4,6 +4,8 @@ param(
 
     [string]$OutputDirectory = (Join-Path (Split-Path -Parent $PSScriptRoot) 'artifacts'),
 
+    [string]$WorkDirectoryRoot = [System.IO.Path]::GetTempPath(),
+
     [switch]$KeepWorkDirectory
 )
 
@@ -63,7 +65,9 @@ Enter-VsDevShell -VsInstallPath $vsRoot -DevCmdArguments '-arch=x64 -host_arch=x
 $outputFullPath = [System.IO.Path]::GetFullPath($OutputDirectory)
 [System.IO.Directory]::CreateDirectory($outputFullPath) | Out-Null
 
-$workRoot = Join-Path ([System.IO.Path]::GetTempPath()) ('devstack-apache-' + [Guid]::NewGuid().ToString('N'))
+$workParent = [System.IO.Path]::GetFullPath($WorkDirectoryRoot)
+[System.IO.Directory]::CreateDirectory($workParent) | Out-Null
+$workRoot = Join-Path $workParent ('ds-' + [Guid]::NewGuid().ToString('N').Substring(0, 8))
 $sourceParent = Join-Path $workRoot 'source'
 $buildRoot = Join-Path $workRoot 'build'
 $installRoot = Join-Path $workRoot 'install'

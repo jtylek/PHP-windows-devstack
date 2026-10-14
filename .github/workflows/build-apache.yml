@@ -25,7 +25,8 @@ jobs:
 
       - name: Build verified Apache runtime
         shell: pwsh
-        run: ./scripts/build-apache.ps1
+        # Several autotools-based vcpkg ports still require a short Windows path.
+        run: ./scripts/build-apache.ps1 -WorkDirectoryRoot C:\dsb
 
       - name: Upload Apache runtime
         uses: actions/upload-artifact@v4
