@@ -121,7 +121,6 @@ public sealed class PhpConfigurationManager
 
         return string.Join(Environment.NewLine,
         [
-            "zend_extension=opcache",
             "opcache.enable=1",
             "opcache.enable_cli=0",
             $"opcache.memory_consumption={settings.MemoryConsumptionMb}",
