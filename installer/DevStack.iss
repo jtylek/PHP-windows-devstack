@@ -57,53 +57,37 @@ Type: files; Name: "{app}\setup-progress.txt"
 
 [Code]
 const
-  WAIT_OBJECT_0 = 0;
-  WAIT_TIMEOUT = $102;
+  RUNTIME_PROGRESS_TOTAL = 7;
 
-function WaitForSingleObject(hHandle: Integer; dwMilliseconds: Cardinal): Cardinal;
-  external 'WaitForSingleObject@kernel32.dll stdcall';
-
-function GetExitCodeProcess(hProcess: Integer; var lpExitCode: Cardinal): Boolean;
-  external 'GetExitCodeProcess@kernel32.dll stdcall';
-
-function CloseHandle(hObject: Integer): Boolean;
-  external 'CloseHandle@kernel32.dll stdcall';
-
-procedure UpdateRuntimeProgress;
+procedure RuntimeSetupLog(const S: String; const Error, FirstLine: Boolean);
 var
-  ProgressText: AnsiString;
-  FirstSeparator: Integer;
-  SecondSeparator: Integer;
-  Completed: Integer;
-  Total: Integer;
   MessageText: String;
 begin
-  if not LoadStringFromFile(ExpandConstant('{app}\setup-progress.txt'), ProgressText) then
+  MessageText := Trim(S);
+  if MessageText = '' then
     exit;
 
-  FirstSeparator := Pos('|', ProgressText);
-  SecondSeparator := Pos('|', Copy(ProgressText, FirstSeparator + 1, Length(ProgressText)));
-  if SecondSeparator > 0 then
-    SecondSeparator := SecondSeparator + FirstSeparator;
-  if (FirstSeparator = 0) or (SecondSeparator = 0) then
-    exit;
-
-  try
-    Completed := StrToInt(Copy(ProgressText, 1, FirstSeparator - 1));
-    Total := StrToInt(Copy(ProgressText, FirstSeparator + 1, SecondSeparator - FirstSeparator - 1));
-    MessageText := Trim(Copy(ProgressText, SecondSeparator + 1, Length(ProgressText)));
-    WizardForm.ProgressGauge.Max := Total;
-    WizardForm.ProgressGauge.Position := Completed;
-    WizardForm.StatusLabel.Caption := MessageText;
-  except
-    // Ignore a partially written progress update and try again on the next poll.
-  end;
+  WizardForm.StatusLabel.Caption := MessageText;
+  if Pos('[1/4]', MessageText) > 0 then
+    WizardForm.ProgressGauge.Position := 0
+  else if Pos('[2/4]', MessageText) > 0 then
+    WizardForm.ProgressGauge.Position := 1
+  else if Pos('[3/4]', MessageText) > 0 then
+    WizardForm.ProgressGauge.Position := 2
+  else if Pos('[4/4]', MessageText) > 0 then
+    WizardForm.ProgressGauge.Position := 3
+  else if Pos('Initializing the local MariaDB', MessageText) > 0 then
+    WizardForm.ProgressGauge.Position := 5
+  else if Pos('Finalizing runtime setup', MessageText) > 0 then
+    WizardForm.ProgressGauge.Position := 6
+  else if Pos('DevStack runtime setup completed', MessageText) > 0 then
+    WizardForm.ProgressGauge.Position := RUNTIME_PROGRESS_TOTAL;
+  WizardForm.Refresh;
 end;
 
 procedure RunRuntimeSetup;
 var
-  SetupHandle: Integer;
-  ExitCode: Cardinal;
+  ResultCode: Integer;
   Parameters: String;
 begin
   Parameters := '-NoLogo -NoProfile -ExecutionPolicy Bypass -File "' +
@@ -111,21 +95,12 @@ begin
     ExpandConstant('{app}') + '" -ProgressPath "' +
     ExpandConstant('{app}\setup-progress.txt') + '"';
 
-  if not Exec(ExpandConstant('{sys}\WindowsPowerShell\v1.0\powershell.exe'),
-    Parameters, '', SW_HIDE, ewNoWait, SetupHandle) then
+  WizardForm.ProgressGauge.Max := RUNTIME_PROGRESS_TOTAL;
+  WizardForm.ProgressGauge.Position := 0;
+  if not ExecAndLogOutput(ExpandConstant('{sys}\WindowsPowerShell\v1.0\powershell.exe'),
+    Parameters, '', SW_HIDE, ewWaitUntilTerminated, ResultCode, @RuntimeSetupLog) then
     RaiseException('Could not start the DevStack runtime setup process.');
-
-  repeat
-    UpdateRuntimeProgress;
-    WizardForm.Refresh;
-  until WaitForSingleObject(SetupHandle, 250) <> WAIT_TIMEOUT;
-
-  UpdateRuntimeProgress;
-  if not GetExitCodeProcess(SetupHandle, ExitCode) then
-    RaiseException('Could not determine the runtime setup result.');
-  CloseHandle(SetupHandle);
-
-  if ExitCode <> 0 then
+  if ResultCode <> 0 then
     RaiseException('Runtime download or MariaDB initialization failed. Review the setup log and try again.');
 end;
 
