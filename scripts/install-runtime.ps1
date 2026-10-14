@@ -13,6 +13,18 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
+function Get-Sha256Hex([string]$Path) {
+    $stream = [System.IO.File]::OpenRead($Path)
+    $algorithm = [System.Security.Cryptography.SHA256]::Create()
+    try {
+        return ([BitConverter]::ToString($algorithm.ComputeHash($stream))).Replace('-', '').ToLowerInvariant()
+    }
+    finally {
+        $algorithm.Dispose()
+        $stream.Dispose()
+    }
+}
+
 & (Join-Path $PSScriptRoot 'verify-runtime-manifest.ps1') -ManifestPath $ManifestPath
 
 if (-not [Environment]::Is64BitOperatingSystem) {
@@ -57,13 +69,14 @@ foreach ($item in $selected) {
         Write-Host "Downloading $($item.displayName) $($item.version)..."
         Invoke-WebRequest -Uri $item.archiveUrl -OutFile $archivePath -UseBasicParsing
 
-        $actualHash = (Get-FileHash -LiteralPath $archivePath -Algorithm SHA256).Hash.ToLowerInvariant()
+        $actualHash = Get-Sha256Hex $archivePath
         $expectedHash = $item.sha256.ToLowerInvariant()
         if ($actualHash -cne $expectedHash) {
             throw "SHA-256 verification failed for '$($item.name)'. Expected $expectedHash but received $actualHash."
         }
 
-        Expand-Archive -LiteralPath $archivePath -DestinationPath $extractPath
+        Add-Type -AssemblyName System.IO.Compression.FileSystem
+        [System.IO.Compression.ZipFile]::ExtractToDirectory($archivePath, $extractPath)
 
         $payloadRoot = $extractPath
         if ($item.stripTopDirectory) {
