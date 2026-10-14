@@ -1,0 +1,15 @@
+[mariadbd]
+basedir="{{MARIADB_ROOT}}"
+datadir="{{MARIADB_DATA_ROOT}}"
+port={{MARIADB_PORT}}
+bind-address=127.0.0.1
+character-set-server=utf8mb4
+collation-server=utf8mb4_unicode_ci
+skip-name-resolve
+log-error="{{LOG_ROOT}}/mariadb-error.log"
+
+[client]
+host=127.0.0.1
+port={{MARIADB_PORT}}
+user=root
+default-character-set=utf8mb4

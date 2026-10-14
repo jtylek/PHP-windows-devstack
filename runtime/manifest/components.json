@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "components": [
+    {
+      "name": "apache",
+      "version": "2.4.x",
+      "architecture": "x64",
+      "sourcePage": "https://httpd.apache.org/download.cgi",
+      "archiveUrl": null,
+      "sha256": null,
+      "status": "source-selection-required"
+    },
+    {
+      "name": "php",
+      "version": "8.5.x",
+      "architecture": "x64",
+      "variant": "thread-safe",
+      "sourcePage": "https://www.php.net/downloads.php?os=windows&version=8.5",
+      "archiveUrl": null,
+      "sha256": null,
+      "status": "pin-before-download"
+    },
+    {
+      "name": "mariadb",
+      "version": "11.8.x-lts",
+      "architecture": "x64",
+      "sourcePage": "https://mariadb.org/download/",
+      "archiveUrl": null,
+      "sha256": null,
+      "status": "pin-before-download"
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+ServerRoot "{{APACHE_ROOT}}"
+Listen 127.0.0.1:{{HTTP_PORT}}
+ServerName localhost:{{HTTP_PORT}}
+
+LoadModule authz_core_module modules/mod_authz_core.so
+LoadModule authz_host_module modules/mod_authz_host.so
+LoadModule dir_module modules/mod_dir.so
+LoadModule mime_module modules/mod_mime.so
+LoadModule rewrite_module modules/mod_rewrite.so
+LoadModule php_module "{{PHP_ROOT}}/php8apache2_4.dll"
+
+PHPIniDir "{{CONFIG_ROOT}}"
+AddHandler application/x-httpd-php .php
+DirectoryIndex index.php index.html
+
+DocumentRoot "{{WWW_ROOT}}"
+<Directory "{{WWW_ROOT}}">
+    Options Indexes FollowSymLinks
+    AllowOverride All
+    Require local
+</Directory>
+
+ErrorLog "{{LOG_ROOT}}/apache-error.log"
+CustomLog "{{LOG_ROOT}}/apache-access.log" common

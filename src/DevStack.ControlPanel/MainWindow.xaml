@@ -1,0 +1,56 @@
+<Window x:Class="DevStack.ControlPanel.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="DevStack" Height="520" Width="760"
+        MinHeight="420" MinWidth="640"
+        Background="#F5F7FA">
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <StackPanel>
+            <TextBlock Text="DevStack" FontSize="28" FontWeight="SemiBold" />
+            <TextBlock Text="Apache · PHP 8.5 · MariaDB" Foreground="#52606D" Margin="0,4,0,0" />
+        </StackPanel>
+
+        <Grid Grid.Row="1" Margin="0,24,0,16">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Border Background="White" CornerRadius="8" Padding="16" Margin="0,0,8,0">
+                <StackPanel>
+                    <TextBlock Text="Apache" FontWeight="SemiBold" />
+                    <TextBlock x:Name="ApacheStatus" Text="Stopped" Foreground="#B42318" Margin="0,6,0,0" />
+                    <TextBlock Text="127.0.0.1:8080" Foreground="#667085" Margin="0,2,0,0" />
+                </StackPanel>
+            </Border>
+            <Border Grid.Column="1" Background="White" CornerRadius="8" Padding="16" Margin="8,0,0,0">
+                <StackPanel>
+                    <TextBlock Text="MariaDB" FontWeight="SemiBold" />
+                    <TextBlock x:Name="MariaDbStatus" Text="Stopped" Foreground="#B42318" Margin="0,6,0,0" />
+                    <TextBlock Text="127.0.0.1:3307" Foreground="#667085" Margin="0,2,0,0" />
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <TextBox Grid.Row="2" x:Name="LogOutput" IsReadOnly="True"
+                 FontFamily="Consolas" FontSize="12" TextWrapping="NoWrap"
+                 VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
+                 Background="#101828" Foreground="#EAECF0" BorderThickness="0"
+                 Padding="12" />
+
+        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+            <Button x:Name="OpenBrowserButton" Content="Open localhost" Padding="18,9" Margin="0,0,8,0"
+                    Click="OpenBrowser_Click" />
+            <Button x:Name="StopButton" Content="Stop all" Padding="18,9" Margin="0,0,8,0"
+                    Click="StopAll_Click" />
+            <Button x:Name="StartButton" Content="Start all" Padding="18,9"
+                    Background="#155EEF" Foreground="White" Click="StartAll_Click" />
+        </StackPanel>
+    </Grid>
+</Window>

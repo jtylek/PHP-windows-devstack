@@ -1,0 +1,13 @@
+bin/
+obj/
+.vs/
+.idea/
+artifacts/
+runtime/apache/
+runtime/php/
+runtime/mariadb/
+runtime/config/generated/
+data/
+logs/
+*.user
+*.suo
