@@ -23,7 +23,7 @@ UninstallDisplayIcon={app}\{#MyAppExeName}
 VersionInfoVersion=0.1.0.1
 VersionInfoDescription=DevStack online installer
 VersionInfoProductName=DevStack
-VersionInfoProductVersion={#MyAppVersion}
+VersionInfoProductVersion=0.1.0.1
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
