@@ -89,8 +89,13 @@ jobs:
         run: |
           $setup = 'artifacts/DevStack-Setup-0.1.0-alpha.1-win-x64.exe'
           $testRoot = 'C:\ds-test'
-          $process = Start-Process $setup -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', "/DIR=$testRoot" -Wait -PassThru
-          if ($process.ExitCode -ne 0) { throw "Installer test failed with exit code $($process.ExitCode)." }
+          $installerLog = 'C:\ds-installer.log'
+          $process = Start-Process $setup -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', "/DIR=$testRoot", "/LOG=$installerLog" -Wait -PassThru
+          if ($process.ExitCode -ne 0) {
+            Get-Content $installerLog -ErrorAction SilentlyContinue
+            Get-Content "$testRoot\logs\setup-runtime.log" -ErrorAction SilentlyContinue
+            throw "Installer test failed with exit code $($process.ExitCode)."
+          }
           foreach ($path in @(
             'DevStack.ControlPanel.exe',
             'runtime/apache/bin/httpd.exe',
@@ -99,7 +104,11 @@ jobs:
             'data/mariadb/mysql',
             '.devstack-ready'
           )) {
-            if (-not (Test-Path (Join-Path $testRoot $path))) { throw "Installed path is missing: $path" }
+            if (-not (Test-Path (Join-Path $testRoot $path))) {
+              Get-Content $installerLog -ErrorAction SilentlyContinue
+              Get-Content "$testRoot\logs\setup-runtime.log" -ErrorAction SilentlyContinue
+              throw "Installed path is missing: $path"
+            }
           }
 
       - name: Write installer checksum

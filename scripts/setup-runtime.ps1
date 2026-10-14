@@ -16,6 +16,12 @@ if (-not [Environment]::Is64BitOperatingSystem) {
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
 $installFullPath = [System.IO.Path]::GetFullPath($InstallRoot)
+$logsDirectory = Join-Path $installFullPath 'logs'
+[System.IO.Directory]::CreateDirectory($logsDirectory) | Out-Null
+$transcriptPath = Join-Path $logsDirectory 'setup-runtime.log'
+Start-Transcript -LiteralPath $transcriptPath -Force | Out-Null
+
+try {
 $runtimeRoot = Join-Path $installFullPath 'runtime'
 $manifestPath = Join-Path $runtimeRoot 'manifest/components.json'
 $installer = Join-Path $PSScriptRoot 'install-runtime.ps1'
@@ -55,3 +61,7 @@ if (-not (Test-Path -LiteralPath $systemDatabase -PathType Container)) {
 
 'ready' | Set-Content -LiteralPath (Join-Path $installFullPath '.devstack-ready') -Encoding ascii
 Write-Host 'DevStack runtime setup completed.'
+}
+finally {
+    Stop-Transcript | Out-Null
+}
