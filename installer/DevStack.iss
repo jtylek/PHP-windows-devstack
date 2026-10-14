@@ -18,6 +18,7 @@ OutputBaseFilename=DevStack-Setup-{#MyAppVersion}-win-x64
 Compression=lzma2/max
 SolidCompression=yes
 WizardStyle=modern
+DisableWelcomePage=no
 SetupLogging=yes
 UninstallDisplayIcon={app}\{#MyAppExeName}
 VersionInfoVersion=1.0.0.1
@@ -56,6 +57,15 @@ Type: files; Name: "{app}\.devstack-ready"
 Type: files; Name: "{app}\setup-progress.txt"
 
 [Code]
+procedure InitializeWizard;
+begin
+  WizardForm.WelcomeLabel2.Caption :=
+    'DevStack is a native, portable Windows development environment for PHP applications.' + #13#10#13#10 +
+    'Apache HTTP Server, PHP 8.5 and MariaDB with a desktop control panel will be installed.';
+  WizardForm.WelcomeLabel2.AutoSize := False;
+  WizardForm.WelcomeLabel2.Width := WizardForm.WelcomeLabel2.Parent.ClientWidth - WizardForm.WelcomeLabel2.Left - 24;
+end;
+
 const
   RUNTIME_PROGRESS_TOTAL = 7;
 
