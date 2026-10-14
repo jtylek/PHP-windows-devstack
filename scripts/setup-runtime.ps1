@@ -110,7 +110,10 @@ function Initialize-PhpMyAdminStorage {
             ('log-error="{0}/mariadb-error.log"' -f $logsDirectory.Replace('\', '/'))
         )
         $configLines | Set-Content -LiteralPath $serverConfig -Encoding utf8
-        "[client]`npassword=$RootPassword" | Set-Content -LiteralPath $clientConfig -Encoding utf8
+        @(
+            '[client]'
+            "password=$RootPassword"
+        ) | Set-Content -LiteralPath $clientConfig -Encoding utf8
 
         Write-Host 'Starting MariaDB temporarily for phpMyAdmin configuration storage...'
         $server = Start-Process -FilePath $serverPath -ArgumentList "--defaults-file=$serverConfig", '--console' -WorkingDirectory $mariaRoot -WindowStyle Hidden -PassThru
