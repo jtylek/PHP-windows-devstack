@@ -56,9 +56,9 @@ function Read-ProtectedPassword {
     try {
         $passwordBytes = [Security.Cryptography.ProtectedData]::Unprotect($protectedBytes, $null, [Security.Cryptography.DataProtectionScope]::CurrentUser)
         try { return [Text.Encoding]::UTF8.GetString($passwordBytes) }
-        finally { [Security.Cryptography.CryptographicOperations]::ZeroMemory($passwordBytes) }
+        finally { [Array]::Clear($passwordBytes, 0, $passwordBytes.Length) }
     }
-    finally { [Security.Cryptography.CryptographicOperations]::ZeroMemory($protectedBytes) }
+    finally { [Array]::Clear($protectedBytes, 0, $protectedBytes.Length) }
 }
 
 function New-RandomHexSecret {
@@ -71,7 +71,7 @@ function New-RandomHexSecret {
     }
     finally {
         $random.Dispose()
-        [Security.Cryptography.CryptographicOperations]::ZeroMemory($bytes)
+        [Array]::Clear($bytes, 0, $bytes.Length)
     }
 }
 
@@ -291,7 +291,7 @@ $storageLines = @(
     "`$cfg['Servers'][`$i]['export_templates'] = 'pma__export_templates';"
 )
 Add-Content -LiteralPath (Join-Path $phpMyAdminRoot 'config.inc.php') -Value ($storageLines -join [Environment]::NewLine) -Encoding utf8
-[Security.Cryptography.CryptographicOperations]::ZeroMemory([Text.Encoding]::UTF8.GetBytes($rootPassword))
+[Array]::Clear([Text.Encoding]::UTF8.GetBytes($rootPassword), 0, [Text.Encoding]::UTF8.GetByteCount($rootPassword))
 $rootPassword = $null
 
 Remove-OptionalRuntimeFiles -Root $installFullPath
