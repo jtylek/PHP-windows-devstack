@@ -53,9 +53,15 @@ if (-not (Test-Path -LiteralPath $systemDatabase -PathType Container)) {
 
     $secretsDirectory = Join-Path $installFullPath 'data/secrets'
     [System.IO.Directory]::CreateDirectory($secretsDirectory) | Out-Null
-    $securePassword = ConvertTo-SecureString $rootPassword -AsPlainText -Force
-    $securePassword | ConvertFrom-SecureString |
-        Set-Content -LiteralPath (Join-Path $secretsDirectory 'mariadb-root-password.dpapi') -Encoding ascii
+    $passwordBytes = [Text.Encoding]::UTF8.GetBytes($rootPassword)
+    $protectedBytes = [Security.Cryptography.ProtectedData]::Protect(
+        $passwordBytes,
+        $null,
+        [Security.Cryptography.DataProtectionScope]::CurrentUser)
+    [System.IO.File]::WriteAllBytes(
+        (Join-Path $secretsDirectory 'mariadb-root-password.dpapi'),
+        $protectedBytes)
+    [Array]::Clear($passwordBytes, 0, $passwordBytes.Length)
     $rootPassword = $null
 }
 
