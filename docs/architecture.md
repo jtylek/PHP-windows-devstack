@@ -40,11 +40,23 @@ unexpected termination remain roadmap work.
 ## Runtime trust
 
 Runtime binaries must come from upstream release sources. Each exact archive
-is pinned in `runtime/manifest/components.json` with a SHA-256 checksum. Apache
-for Windows requires special care because the Apache Software Foundation does
-not publish official Windows binaries; release builds should either compile it
-reproducibly from upstream source or clearly document and verify the selected
-binary distributor.
+is pinned in `runtime/manifest/components.json` with a SHA-256 checksum. The
+installer rejects non-HTTPS URLs, malformed checksums, path traversal in
+required-file declarations and unexpected archive layouts. It verifies the
+download before extraction and installs through a staging directory.
+
+Apache for Windows requires special care because the Apache Software
+Foundation does not publish official Windows binaries. Apache 2.4.69 source is
+pinned but disabled; release builds should either compile it reproducibly from
+upstream source or clearly document and verify the selected binary distributor.
+
+## Runtime installation
+
+`scripts/install-runtime.ps1` installs enabled Windows ZIP components. A
+successful installation produces `.devstack-receipt.json` inside the component
+directory containing the exact version, URL, digest and installation time.
+Replacement is opt-in, and the previous runtime is moved to a recoverable
+backup rather than deleted.
 
 ## Secrets
 

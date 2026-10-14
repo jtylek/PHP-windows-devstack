@@ -6,6 +6,8 @@ artifacts/
 runtime/apache/
 runtime/php/
 runtime/mariadb/
+runtime/.backup/
+runtime/.staging-*/
 runtime/config/generated/
 data/
 logs/

@@ -62,12 +62,24 @@ To validate the expected repository and package layout:
 ./scripts/validate-layout.ps1
 ```
 
-## Runtime acquisition
+## Install the verified runtime
 
-`runtime/manifest/components.json` records pinned versions, source pages and
-archive checksums. The archive URLs and checksums must be reviewed and filled
-before the future bootstrap command is enabled. DevStack must never execute or
-extract an unverified download.
+The manifest currently pins PHP 8.5.11 Thread Safe x64 and MariaDB 11.8.9 LTS
+for Windows. To download, verify and extract both packages:
+
+```powershell
+./scripts/install-runtime.ps1
+```
+
+The installer downloads only over HTTPS, verifies the exact SHA-256 before
+extraction, validates expected executable files and writes an installation
+receipt. Existing runtimes are not replaced unless `-Force` is supplied; when
+forced, the previous directory is moved under `runtime/.backup/`.
+
+Apache 2.4.69 source is pinned for provenance but intentionally disabled.
+Apache does not publish an official Windows binary, so enabling it requires an
+explicit decision between a reproducible source build and an approved
+third-party distributor.
 
 ## Security
 

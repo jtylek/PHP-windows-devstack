@@ -1,33 +1,66 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "components": [
     {
       "name": "apache",
-      "version": "2.4.x",
-      "architecture": "x64",
+      "displayName": "Apache HTTP Server",
+      "version": "2.4.69",
+      "platform": "source",
+      "architecture": "source",
+      "enabled": false,
+      "archiveType": "tar.gz",
       "sourcePage": "https://httpd.apache.org/download.cgi",
-      "archiveUrl": null,
-      "sha256": null,
-      "status": "source-selection-required"
+      "archiveUrl": "https://dlcdn.apache.org/httpd/httpd-2.4.69.tar.gz",
+      "sha256": "c551b9861e26f146f57e1b1765e69c89a60b3db0ec252ccab0d36283487016bb",
+      "targetDirectory": "apache",
+      "stripTopDirectory": true,
+      "requiredFiles": [],
+      "status": "blocked-no-upstream-windows-binary",
+      "notes": "Source is pinned for provenance only. Do not enable until a reproducible Windows build pipeline or approved binary distributor is selected."
     },
     {
       "name": "php",
-      "version": "8.5.x",
+      "displayName": "PHP",
+      "version": "8.5.11",
+      "platform": "windows",
       "architecture": "x64",
       "variant": "thread-safe",
+      "enabled": true,
+      "archiveType": "zip",
       "sourcePage": "https://www.php.net/downloads.php?os=windows&version=8.5",
-      "archiveUrl": null,
-      "sha256": null,
-      "status": "pin-before-download"
+      "archiveUrl": "https://downloads.php.net/~windows/releases/archives/php-8.5.11-Win32-vs17-x64.zip",
+      "sha256": "c83d5a1e0d760fb026ce695d8a70a73a4c81ac224b3e5c425406b23a7d53e1de",
+      "targetDirectory": "php",
+      "stripTopDirectory": false,
+      "requiredFiles": [
+        "php.exe",
+        "php8apache2_4.dll",
+        "ext/php_mysqli.dll",
+        "ext/php_pdo_mysql.dll"
+      ],
+      "status": "ready"
     },
     {
       "name": "mariadb",
-      "version": "11.8.x-lts",
+      "displayName": "MariaDB Server",
+      "version": "11.8.9",
+      "platform": "windows",
       "architecture": "x64",
+      "variant": "lts",
+      "enabled": true,
+      "archiveType": "zip",
       "sourcePage": "https://mariadb.org/download/",
-      "archiveUrl": null,
-      "sha256": null,
-      "status": "pin-before-download"
+      "archiveUrl": "https://archive.mariadb.org/mariadb-11.8.9/winx64-packages/mariadb-11.8.9-winx64.zip",
+      "sha256": "830c46727d9278eae212ae3eca44eeb9e71b2a68704e95f344a64fba7b1963f5",
+      "targetDirectory": "mariadb",
+      "stripTopDirectory": true,
+      "requiredFiles": [
+        "bin/mariadbd.exe",
+        "bin/mariadb.exe",
+        "bin/mariadb-admin.exe",
+        "bin/mariadb-install-db.exe"
+      ],
+      "status": "ready"
     }
   ]
 }
