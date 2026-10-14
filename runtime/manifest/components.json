@@ -15,8 +15,8 @@
       "targetDirectory": "apache",
       "stripTopDirectory": true,
       "requiredFiles": [],
-      "status": "blocked-no-upstream-windows-binary",
-      "notes": "Source is pinned for provenance only. Do not enable until a reproducible Windows build pipeline or approved binary distributor is selected."
+      "status": "ci-build-available",
+      "notes": "Source is pinned for provenance. The build-apache workflow produces a verified Windows artifact; install it separately with scripts/install-apache-artifact.ps1."
     },
     {
       "name": "php",

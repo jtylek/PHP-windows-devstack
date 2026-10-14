@@ -4,8 +4,8 @@ DevStack is a native, portable Windows development environment for PHP
 applications. The planned runtime combines Apache HTTP Server, PHP 8.5 and
 MariaDB behind a small desktop control panel.
 
-> Project status: early scaffold. No third-party server binaries are committed
-> yet, and this repository is not ready for production use.
+> Project status: early development. Third-party server binaries are not
+> committed, and this repository is not ready for production use.
 
 ## Initial goals
 
@@ -76,10 +76,30 @@ extraction, validates expected executable files and writes an installation
 receipt. Existing runtimes are not replaced unless `-Force` is supplied; when
 forced, the previous directory is moved under `runtime/.backup/`.
 
-Apache 2.4.69 source is pinned for provenance but intentionally disabled.
-Apache does not publish an official Windows binary, so enabling it requires an
-explicit decision between a reproducible source build and an approved
-third-party distributor.
+Apache 2.4.69 source is pinned for provenance. Because Apache does not publish
+an official Windows binary, `.github/workflows/build-apache.yml` compiles it on
+a Windows Server 2022 runner using a pinned vcpkg revision and uploads a ZIP,
+SHA-256 file and build receipt as a GitHub Actions artifact.
+
+To build the same artifact locally, use Visual Studio 2022 with C++ tools,
+CMake, Ninja, Git and PowerShell 7:
+
+```powershell
+./scripts/build-apache.ps1
+```
+
+After downloading and extracting the `apache-httpd-2.4.69-win64-vs17`
+workflow artifact, install it into `runtime/apache` with:
+
+```powershell
+./scripts/install-apache-artifact.ps1 `
+  -ArchivePath ./apache-httpd-2.4.69-win64-vs17.zip `
+  -ChecksumPath ./apache-httpd-2.4.69-win64-vs17.zip.sha256
+```
+
+The Apache installer verifies the artifact checksum and expected runtime files.
+As with the other installer, replacement requires `-Force` and preserves the
+previous directory under `runtime/.backup/`.
 
 ## Security
 

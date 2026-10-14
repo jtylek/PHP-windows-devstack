@@ -1,0 +1,39 @@
+name: build-apache
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/build-apache.yml
+      - build/apache/**
+      - scripts/build-apache.ps1
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-apache-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build-apache:
+    runs-on: windows-2022
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build verified Apache runtime
+        shell: pwsh
+        run: ./scripts/build-apache.ps1
+
+      - name: Upload Apache runtime
+        uses: actions/upload-artifact@v4
+        with:
+          name: apache-httpd-2.4.69-win64-vs17
+          path: |
+            artifacts/apache-httpd-2.4.69-win64-vs17.zip
+            artifacts/apache-httpd-2.4.69-win64-vs17.zip.sha256
+            artifacts/apache-httpd-2.4.69-win64-vs17.build.json
+          if-no-files-found: error
+          retention-days: 14

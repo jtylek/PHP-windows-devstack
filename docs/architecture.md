@@ -46,9 +46,13 @@ required-file declarations and unexpected archive layouts. It verifies the
 download before extraction and installs through a staging directory.
 
 Apache for Windows requires special care because the Apache Software
-Foundation does not publish official Windows binaries. Apache 2.4.69 source is
-pinned but disabled; release builds should either compile it reproducibly from
-upstream source or clearly document and verify the selected binary distributor.
+Foundation does not publish official Windows binaries. The dedicated Windows
+workflow verifies the pinned Apache 2.4.69 source archive, builds against an
+exact vcpkg revision, copies dynamic runtime dependencies and emits a ZIP with
+its SHA-256 checksum and a machine-readable build receipt. The runner image and
+compiler family are fixed, while the receipt records the remaining build
+inputs. The result is not trusted until its checksum is verified during local
+installation.
 
 ## Runtime installation
 
@@ -57,6 +61,11 @@ successful installation produces `.devstack-receipt.json` inside the component
 directory containing the exact version, URL, digest and installation time.
 Replacement is opt-in, and the previous runtime is moved to a recoverable
 backup rather than deleted.
+
+Apache is installed separately from the GitHub Actions artifact using
+`scripts/install-apache-artifact.ps1`. This keeps the source-built artifact out
+of Git and prevents the general runtime manifest from pointing to a temporary
+Actions download URL.
 
 ## Secrets
 
