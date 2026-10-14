@@ -101,6 +101,23 @@ The control panel includes **SMTP Mail Capture** for local application troublesh
 Changes are stored under `data/config` and only require restarting Apache;
 MariaDB is not restarted.
 
+### Memory usage
+
+DevStack does not have a fixed memory footprint; usage depends on the active
+application and database workload. Typical Windows Task Manager readings are:
+
+| State | Approximate RAM |
+| --- | ---: |
+| Control panel only | 50–100 MB |
+| Apache and MariaDB running idle | 180–350 MB |
+| Epesi actively used | 300–700 MB |
+| Heavy imports or reports | May temporarily exceed 1 GB |
+
+The PHP `memory_limit` and OPcache values are limits or cache capacity, not
+memory permanently allocated at startup. For comfortable Epesi development,
+4 GB of system RAM is recommended; 8 GB is preferable when other applications
+are open.
+
 In phpMyAdmin, open the **Databases** tab, enter a database name, and choose
 **Create**. phpMyAdmin is installed as the English-only stable 5.2.3 package;
 the installer verifies its SHA-256 checksum before extraction.
