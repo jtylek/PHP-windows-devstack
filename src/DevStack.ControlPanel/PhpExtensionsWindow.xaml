@@ -9,8 +9,12 @@
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
-        <TextBlock Text="Choose the bundled PHP extensions to load. Changes apply after restarting DevStack."
-                   TextWrapping="Wrap" Margin="0,0,0,16" />
+        <StackPanel Margin="0,0,0,16">
+            <TextBlock Text="Choose the bundled PHP extensions to load. Changes apply after restarting DevStack."
+                       TextWrapping="Wrap" />
+            <TextBlock Text="Note: PHP built-in extensions are always active and cannot be truly disabled."
+                       TextWrapping="Wrap" Foreground="#667085" Margin="0,8,0,0" />
+        </StackPanel>
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
             <StackPanel x:Name="ExtensionsPanel" />
         </ScrollViewer>
