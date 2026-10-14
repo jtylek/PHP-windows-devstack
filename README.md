@@ -1,8 +1,12 @@
 # DevStack for Windows
 
 DevStack is a native, portable Windows development environment for PHP
-applications. The planned runtime combines Apache HTTP Server, PHP 8.5 and
-MariaDB behind a small desktop control panel.
+applications. The runtime combines Apache HTTP Server, PHP 8.5 and MariaDB
+behind a small desktop control panel.
+
+DevStack is an alternative to XAMPP for Windows PHP developers who want to use
+PHP 8.5. The [XAMPP for Windows download page](https://www.apachefriends.org/download.html)
+lists packages with PHP 8.0.30, 8.1.25 and 8.2.12.
 
 > Project status: unsigned release candidate. The automated distribution is intended for
 > Windows 10/11 x64 testing and is not ready for production use.

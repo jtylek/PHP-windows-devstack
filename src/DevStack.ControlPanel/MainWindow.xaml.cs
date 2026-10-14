@@ -113,6 +113,17 @@ public partial class MainWindow : Window
     private void RepositoryLink_Click(object sender, RoutedEventArgs e) =>
         Process.Start(new ProcessStartInfo("https://github.com/jtylek/devstack-windows") { UseShellExecute = true });
 
+    private void About_Click(object sender, RoutedEventArgs e) =>
+        MessageBox.Show(
+            this,
+            "DevStack is a Windows development environment for PHP developers who want to use PHP 8.5. " +
+            "It is an alternative to XAMPP, whose Windows download page lists packages with PHP " +
+            "8.0.30, 8.1.25 and 8.2.12.\n\n" +
+            "XAMPP downloads: https://www.apachefriends.org/download.html",
+            "About DevStack",
+            MessageBoxButton.OK,
+            MessageBoxImage.Information);
+
     private void OpenBrowser_Click(object sender, RoutedEventArgs e) =>
         Process.Start(new ProcessStartInfo("http://127.0.0.1:8080") { UseShellExecute = true });
 
