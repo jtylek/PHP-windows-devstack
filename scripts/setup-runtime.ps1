@@ -53,6 +53,7 @@ if (-not (Test-Path -LiteralPath $systemDatabase -PathType Container)) {
 
     $secretsDirectory = Join-Path $installFullPath 'data/secrets'
     [System.IO.Directory]::CreateDirectory($secretsDirectory) | Out-Null
+    Add-Type -AssemblyName System.Security
     $passwordBytes = [Text.Encoding]::UTF8.GetBytes($rootPassword)
     $protectedBytes = [Security.Cryptography.ProtectedData]::Protect(
         $passwordBytes,
