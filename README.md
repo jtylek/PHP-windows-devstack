@@ -4,8 +4,8 @@ DevStack is a native, portable Windows development environment for PHP
 applications. The planned runtime combines Apache HTTP Server, PHP 8.5 and
 MariaDB behind a small desktop control panel.
 
-> Project status: early development. Third-party server binaries are not
-> committed, and this repository is not ready for production use.
+> Project status: unsigned alpha. The automated distribution is intended for
+> Windows 10/11 x64 testing and is not ready for production use.
 
 ## Initial goals
 
@@ -64,8 +64,21 @@ To validate the expected repository and package layout:
 
 ## Install the verified runtime
 
-The manifest currently pins PHP 8.5.11 Thread Safe x64 and MariaDB 11.8.9 LTS
-for Windows. To download, verify and extract both packages:
+### Nontechnical Windows installation
+
+Download `DevStack-Setup-0.1.0-alpha.1-win-x64.exe` from the latest project
+release and run it. The per-user installer does not require administrator
+rights. It installs a self-contained control panel, downloads checksum-pinned
+Apache, PHP and MariaDB archives, initializes a local MariaDB instance, and
+creates shortcuts automatically.
+
+The alpha installer is not code-signed, so Windows SmartScreen may display an
+unknown-publisher warning. Published releases include a separate SHA-256 file.
+
+### Developer installation
+
+The manifest pins Apache 2.4.69, PHP 8.5.11 Thread Safe x64 and MariaDB 11.8.9
+LTS for Windows. To download, verify and extract all packages:
 
 ```powershell
 ./scripts/install-runtime.ps1
@@ -78,8 +91,8 @@ forced, the previous directory is moved under `runtime/.backup/`.
 
 Apache 2.4.69 source is pinned for provenance. Because Apache does not publish
 an official Windows binary, `.github/workflows/build-apache.yml` compiles it on
-a Windows Server 2022 runner using a pinned vcpkg revision and uploads a ZIP,
-SHA-256 file and build receipt as a GitHub Actions artifact.
+a Windows Server 2022 runner using a pinned vcpkg revision. The verified build
+is published as a permanent project release asset for the online installer.
 
 To build the same artifact locally, use Visual Studio 2022 with C++ tools,
 CMake, Ninja, Git and PowerShell 7:
@@ -88,8 +101,8 @@ CMake, Ninja, Git and PowerShell 7:
 ./scripts/build-apache.ps1
 ```
 
-After downloading and extracting the `apache-httpd-2.4.69-win64-vs17`
-workflow artifact, install it into `runtime/apache` with:
+For independent verification, an extracted Apache build artifact can still be
+installed into `runtime/apache` with:
 
 ```powershell
 ./scripts/install-apache-artifact.ps1 `

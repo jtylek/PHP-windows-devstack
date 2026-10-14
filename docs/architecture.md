@@ -62,10 +62,24 @@ directory containing the exact version, URL, digest and installation time.
 Replacement is opt-in, and the previous runtime is moved to a recoverable
 backup rather than deleted.
 
-Apache is installed separately from the GitHub Actions artifact using
-`scripts/install-apache-artifact.ps1`. This keeps the source-built artifact out
-of Git and prevents the general runtime manifest from pointing to a temporary
-Actions download URL.
+The verified Apache build is promoted from its successful Actions artifact to a
+permanent prerelease asset. The runtime manifest pins that asset and its digest.
+`scripts/install-apache-artifact.ps1` remains available for independent or
+offline verification.
+
+## Windows distribution
+
+The online distribution is compiled by `.github/workflows/distribution.yml` on
+Windows Server 2022. It publishes the WPF application self-contained for
+`win-x64`, packages it with Inno Setup, installs per-user under Local AppData,
+and downloads all server components during setup. The same workflow performs a
+silent installation into a clean directory and verifies the executable, server
+and initialized database layout before publishing the setup program.
+
+MariaDB receives a cryptographically random root password during initialization.
+The password is stored using Windows DPAPI for the current user, rather than as
+plain text. No Windows services are registered; Apache and MariaDB remain child
+processes of the control panel.
 
 ## Secrets
 

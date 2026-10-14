@@ -6,7 +6,9 @@ $repositoryRoot = Split-Path -Parent $PSScriptRoot
 $requiredPaths = @(
     'DevStack.sln',
     '.github/workflows/build-apache.yml',
+    '.github/workflows/distribution.yml',
     'build/apache/build-config.json',
+    'installer/DevStack.iss',
     'runtime/manifest/components.json',
     'runtime/templates/httpd.conf.template',
     'runtime/templates/php.ini.template',
@@ -14,6 +16,7 @@ $requiredPaths = @(
     'scripts/install-runtime.ps1',
     'scripts/build-apache.ps1',
     'scripts/install-apache-artifact.ps1',
+    'scripts/setup-runtime.ps1',
     'scripts/verify-runtime-manifest.ps1',
     'src/DevStack.Core/DevStack.Core.csproj',
     'src/DevStack.ControlPanel/DevStack.ControlPanel.csproj',

@@ -1,0 +1,130 @@
+name: distribution
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/distribution.yml
+      - installer/**
+      - scripts/install-runtime.ps1
+      - scripts/setup-runtime.ps1
+      - scripts/verify-runtime-manifest.ps1
+      - runtime/manifest/components.json
+      - runtime/templates/**
+      - src/**
+      - www/**
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: distribution-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  RELEASE_TAG: v0.1.0-alpha.1
+  APACHE_ARTIFACT_ID: "11881045146"
+  APACHE_SHA256: 10b310843c4763d7efa2c04d3e474c35bb9dee927babb5a167cbebd1545eff3f
+
+jobs:
+  build-installer:
+    runs-on: windows-2022
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Download and verify Apache release payload
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          New-Item -ItemType Directory -Path artifacts/apache-release -Force | Out-Null
+          gh api "repos/${{ github.repository }}/actions/artifacts/$env:APACHE_ARTIFACT_ID/zip" > artifacts/apache-artifact.zip
+          Expand-Archive artifacts/apache-artifact.zip artifacts/apache-release
+          $archive = 'artifacts/apache-release/apache-httpd-2.4.69-win64-vs17.zip'
+          $actual = (Get-FileHash $archive -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($actual -cne $env:APACHE_SHA256) {
+            throw "Apache artifact hash mismatch: $actual"
+          }
+
+      - name: Create permanent alpha release and upload Apache
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view $env:RELEASE_TAG *> $null
+          if ($LASTEXITCODE -ne 0) {
+            gh release create $env:RELEASE_TAG --target $env:GITHUB_SHA --prerelease --title 'DevStack 0.1.0 alpha 1' --notes 'Unsigned Windows 10/11 x64 test distribution.'
+          }
+          gh release upload $env:RELEASE_TAG artifacts/apache-release/* --clobber
+
+      - name: Publish self-contained control panel
+        shell: pwsh
+        run: |
+          dotnet publish src/DevStack.ControlPanel/DevStack.ControlPanel.csproj `
+            --configuration Release `
+            --runtime win-x64 `
+            --self-contained true `
+            --output artifacts/publish `
+            -p:PublishSingleFile=false
+
+      - name: Compile setup program
+        shell: pwsh
+        run: |
+          $compiler = 'C:\Program Files (x86)\Inno Setup 6\ISCC.exe'
+          if (-not (Test-Path $compiler)) {
+            throw 'Inno Setup 6 is not installed on this Windows runner.'
+          }
+          & $compiler installer/DevStack.iss
+          if ($LASTEXITCODE -ne 0) { throw "Inno Setup failed with exit code $LASTEXITCODE." }
+
+      - name: Install silently and verify runtime layout
+        shell: pwsh
+        run: |
+          $setup = 'artifacts/DevStack-Setup-0.1.0-alpha.1-win-x64.exe'
+          $testRoot = 'C:\ds-test'
+          $process = Start-Process $setup -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', "/DIR=$testRoot" -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "Installer test failed with exit code $($process.ExitCode)." }
+          foreach ($path in @(
+            'DevStack.ControlPanel.exe',
+            'runtime/apache/bin/httpd.exe',
+            'runtime/php/php.exe',
+            'runtime/mariadb/bin/mariadbd.exe',
+            'data/mariadb/mysql',
+            '.devstack-ready'
+          )) {
+            if (-not (Test-Path (Join-Path $testRoot $path))) { throw "Installed path is missing: $path" }
+          }
+
+      - name: Write installer checksum
+        shell: pwsh
+        run: |
+          $setup = 'artifacts/DevStack-Setup-0.1.0-alpha.1-win-x64.exe'
+          $hash = (Get-FileHash $setup -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$hash  DevStack-Setup-0.1.0-alpha.1-win-x64.exe" | Set-Content "$setup.sha256" -Encoding ascii
+
+      - name: Upload setup to release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload $env:RELEASE_TAG `
+            artifacts/DevStack-Setup-0.1.0-alpha.1-win-x64.exe `
+            artifacts/DevStack-Setup-0.1.0-alpha.1-win-x64.exe.sha256 `
+            --clobber
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DevStack-Setup-0.1.0-alpha.1-win-x64
+          path: |
+            artifacts/DevStack-Setup-0.1.0-alpha.1-win-x64.exe
+            artifacts/DevStack-Setup-0.1.0-alpha.1-win-x64.exe.sha256
+          if-no-files-found: error
+          retention-days: 14

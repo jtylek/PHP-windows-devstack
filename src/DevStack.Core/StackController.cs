@@ -37,6 +37,16 @@ public sealed class StackController : IDisposable
 
         new ConfigurationGenerator(paths, options).Generate();
 
+        // PHP's Apache module loads php8ts.dll and extension dependencies from
+        // the PHP directory. Child processes inherit this process-local PATH.
+        var currentPath = Environment.GetEnvironmentVariable("PATH") ?? string.Empty;
+        var runtimePath = string.Join(
+            Path.PathSeparator,
+            paths.PhpRoot,
+            Path.Combine(paths.ApacheRoot, "bin"),
+            currentPath);
+        Environment.SetEnvironmentVariable("PATH", runtimePath, EnvironmentVariableTarget.Process);
+
         mariaDb.Start(
             Path.Combine(paths.MariaDbRoot, "bin", "mariadbd.exe"),
             $"--defaults-file=\"{Path.Combine(paths.GeneratedConfigRoot, "mariadb.ini")}\" --console",
