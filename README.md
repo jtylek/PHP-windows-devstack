@@ -66,8 +66,7 @@ To validate the expected repository and package layout:
 
 ### Nontechnical Windows installation
 
-Download `DevStack-Setup-1.0.0-rc.1-win-x64.exe` from the latest project
-release and run it. The per-user installer does not require administrator
+Download the [DevStack 1.0 RC1 installer](https://github.com/jtylek/devstack-windows/releases/download/v1.0.0-rc.1/DevStack-Setup-1.0.0-rc.1-win-x64.exe) and run it. The per-user installer does not require administrator
 rights. It installs a self-contained control panel, downloads checksum-pinned
 Apache, PHP and MariaDB archives, initializes a local MariaDB instance, and
 creates shortcuts automatically.
