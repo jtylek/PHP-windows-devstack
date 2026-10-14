@@ -6,6 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
     <AssemblyName>DevStack.ControlPanel</AssemblyName>
     <RootNamespace>DevStack.ControlPanel</RootNamespace>
   </PropertyGroup>

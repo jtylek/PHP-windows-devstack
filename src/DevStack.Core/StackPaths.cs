@@ -20,6 +20,7 @@ public sealed record StackPaths(string Root)
     public void EnsureMutableDirectories()
     {
         Directory.CreateDirectory(GeneratedConfigRoot);
+        Directory.CreateDirectory(Path.Combine(RuntimeRoot, "apache", "logs"));
         Directory.CreateDirectory(MariaDbDataRoot);
         Directory.CreateDirectory(LogRoot);
         Directory.CreateDirectory(SessionRoot);

@@ -26,6 +26,45 @@ $runtimeRoot = Join-Path $installFullPath 'runtime'
 $manifestPath = Join-Path $runtimeRoot 'manifest/components.json'
 $installer = Join-Path $PSScriptRoot 'install-runtime.ps1'
 
+function Remove-OptionalRuntimeFiles {
+    param([Parameter(Mandatory)][string]$Root)
+
+    # The neutral English resources are in the main application directory.
+    # Remove the satellite resource directories shipped by self-contained .NET.
+    foreach ($culture in @('cs', 'de', 'es', 'fr', 'it', 'ja', 'ko', 'pl', 'pt-BR', 'ru', 'tr', 'zh-Hans', 'zh-Hant')) {
+        $culturePath = Join-Path $Root $culture
+        if (Test-Path -LiteralPath $culturePath -PathType Container) {
+            Remove-Item -LiteralPath $culturePath -Recurse -Force
+        }
+    }
+
+    # Keep runtime binaries and CLI clients, but omit SDK/debug/documentation
+    # payloads that are not needed to run the local stack.
+    $optionalPaths = @(
+        'runtime/apache/manual',
+        'runtime/apache/include',
+        'runtime/apache/lib',
+        'runtime/php/dev',
+        'runtime/php/php8embed.lib',
+        'runtime/php/php.ini-development',
+        'runtime/php/php-cgi.exe',
+        'runtime/php/phpdbg.exe',
+        'runtime/php/php8phpdbg.dll',
+        'runtime/mariadb/include',
+        'runtime/mariadb/bin/server.pdb',
+        'runtime/mariadb/bin/server.lib',
+        'runtime/mariadb/bin/mariadbd.pdb',
+        'runtime/mariadb/lib/mariadbclient.lib',
+        'runtime/mariadb/lib/libmariadb.pdb'
+    )
+    foreach ($relativePath in $optionalPaths) {
+        $path = Join-Path $Root $relativePath
+        if (Test-Path -LiteralPath $path) {
+            Remove-Item -LiteralPath $path -Recurse -Force
+        }
+    }
+}
+
 Write-Host 'Downloading and verifying Apache, PHP and MariaDB...'
 & $installer -Component all -ManifestPath $manifestPath -DestinationRoot $runtimeRoot -Force
 
@@ -65,6 +104,8 @@ if (-not (Test-Path -LiteralPath $systemDatabase -PathType Container)) {
     [Array]::Clear($passwordBytes, 0, $passwordBytes.Length)
     $rootPassword = $null
 }
+
+Remove-OptionalRuntimeFiles -Root $installFullPath
 
 'ready' | Set-Content -LiteralPath (Join-Path $installFullPath '.devstack-ready') -Encoding ascii
 Write-Host 'DevStack runtime setup completed.'
