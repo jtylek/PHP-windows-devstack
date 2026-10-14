@@ -94,7 +94,7 @@ public sealed class SmtpCaptureService : IAsyncDisposable
 
     private async Task HandleClientAsync(TcpClient client, CancellationToken serviceToken)
     {
-        using (client)
+        using var clientLease = client;
         await using var stream = client.GetStream();
         using var reader = new StreamReader(stream, Encoding.ASCII, false, 1024, leaveOpen: true);
         await using var writer = new StreamWriter(stream, new UTF8Encoding(false), 1024, leaveOpen: true) { NewLine = "\r\n", AutoFlush = true };
