@@ -13,6 +13,8 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+
 function Get-Sha256Hex([string]$Path) {
     $stream = [System.IO.File]::OpenRead($Path)
     $algorithm = [System.Security.Cryptography.SHA256]::Create()
@@ -67,7 +69,31 @@ foreach ($item in $selected) {
 
     try {
         Write-Host "Downloading $($item.displayName) $($item.version)..."
-        Invoke-WebRequest -Uri $item.archiveUrl -OutFile $archivePath -UseBasicParsing
+        $webClient = [Net.WebClient]::new()
+        $progressHandler = [System.Net.DownloadProgressChangedEventHandler]{
+            param($sender, $event)
+            $percent = $event.ProgressPercentage
+            $received = [math]::Round($event.BytesReceived / 1MB, 1)
+            $total = if ($event.TotalBytesToReceive -gt 0) {
+                " / $([math]::Round($event.TotalBytesToReceive / 1MB, 1)) MB"
+            }
+            else {
+                ''
+            }
+            Write-Progress -Id 1 -Activity "Downloading DevStack components" `
+                -Status "$($item.displayName): $percent% ($received MB$total)" `
+                -PercentComplete $percent
+        }
+        $webClient.add_DownloadProgressChanged($progressHandler)
+        try {
+            $webClient.DownloadFile($item.archiveUrl, $archivePath)
+        }
+        finally {
+            $webClient.remove_DownloadProgressChanged($progressHandler)
+            $webClient.Dispose()
+            Write-Progress -Id 1 -Activity "Downloading DevStack components" -Completed
+        }
+        Write-Host "Downloaded $($item.displayName). Verifying SHA-256..."
 
         $actualHash = Get-Sha256Hex $archivePath
         $expectedHash = $item.sha256.ToLowerInvariant()

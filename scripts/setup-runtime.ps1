@@ -66,9 +66,13 @@ function Remove-OptionalRuntimeFiles {
 }
 
 Write-Host 'Downloading and verifying Apache, PHP and MariaDB...'
-foreach ($component in @('apache', 'php', 'mariadb')) {
+$components = @('apache', 'php', 'mariadb')
+for ($index = 0; $index -lt $components.Count; $index++) {
+    $component = $components[$index]
+    Write-Host "[$($index + 1)/4] Preparing $component..."
     & $installer -Component $component -ManifestPath $manifestPath -DestinationRoot $runtimeRoot -Force
 }
+Write-Host '[4/4] Preparing phpMyAdmin...'
 & $installer -Component phpmyadmin -ManifestPath $manifestPath -DestinationRoot $installFullPath -Force
 
 $phpMyAdminRoot = Join-Path $installFullPath 'phpmyadmin'
@@ -132,6 +136,7 @@ if (-not (Test-Path -LiteralPath $systemDatabase -PathType Container)) {
 }
 
 Remove-OptionalRuntimeFiles -Root $installFullPath
+Write-Host 'Finalizing runtime setup...'
 
 'ready' | Set-Content -LiteralPath (Join-Path $installFullPath '.devstack-ready') -Encoding ascii
 Write-Host 'DevStack runtime setup completed.'

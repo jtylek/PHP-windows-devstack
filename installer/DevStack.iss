@@ -46,7 +46,7 @@ Name: "{group}\DevStack"; Filename: "{app}\{#MyAppExeName}"
 Name: "{autodesktop}\DevStack"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
 
 [Run]
-Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; Parameters: "-NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File ""{app}\scripts\setup-runtime.ps1"" -InstallRoot ""{app}"""; StatusMsg: "Downloading and configuring Apache, PHP and MariaDB..."; Flags: runhidden waituntilterminated; AfterInstall: VerifyRuntimeSetup
+Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; Parameters: "-NoLogo -NoProfile -ExecutionPolicy Bypass -File ""{app}\scripts\setup-runtime.ps1"" -InstallRoot ""{app}"""; StatusMsg: "Downloading and configuring Apache, PHP, MariaDB and phpMyAdmin..."; Flags: waituntilterminated; AfterInstall: VerifyRuntimeSetup
 Filename: "{app}\{#MyAppExeName}"; Description: "Launch DevStack"; Flags: nowait postinstall skipifsilent
 
 [UninstallDelete]
