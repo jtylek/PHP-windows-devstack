@@ -46,7 +46,6 @@ Name: "{group}\DevStack"; Filename: "{app}\{#MyAppExeName}"
 Name: "{autodesktop}\DevStack"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
 
 [Run]
-Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; Parameters: "-NoLogo -NoProfile -ExecutionPolicy Bypass -File ""{app}\scripts\setup-runtime.ps1"" -InstallRoot ""{app}"""; StatusMsg: "Downloading and configuring Apache, PHP, MariaDB and phpMyAdmin..."; Flags: waituntilterminated; AfterInstall: VerifyRuntimeSetup
 Filename: "{app}\{#MyAppExeName}"; Description: "Launch DevStack"; Flags: nowait postinstall skipifsilent
 
 [UninstallDelete]
@@ -54,10 +53,93 @@ Type: filesandordirs; Name: "{app}\runtime\apache"
 Type: filesandordirs; Name: "{app}\runtime\php"
 Type: filesandordirs; Name: "{app}\runtime\mariadb"
 Type: files; Name: "{app}\.devstack-ready"
+Type: files; Name: "{app}\setup-progress.txt"
 
 [Code]
+const
+  WAIT_OBJECT_0 = 0;
+  WAIT_TIMEOUT = $102;
+
+function WaitForSingleObject(hHandle: Integer; dwMilliseconds: Cardinal): Cardinal;
+  external 'WaitForSingleObject@kernel32.dll stdcall';
+
+function GetExitCodeProcess(hProcess: Integer; var lpExitCode: Cardinal): Boolean;
+  external 'GetExitCodeProcess@kernel32.dll stdcall';
+
+function CloseHandle(hObject: Integer): Boolean;
+  external 'CloseHandle@kernel32.dll stdcall';
+
+procedure UpdateRuntimeProgress;
+var
+  ProgressText: String;
+  FirstSeparator: Integer;
+  SecondSeparator: Integer;
+  Completed: Integer;
+  Total: Integer;
+  MessageText: String;
+begin
+  if not LoadStringFromFile(ExpandConstant('{app}\setup-progress.txt'), ProgressText) then
+    exit;
+
+  FirstSeparator := Pos('|', ProgressText);
+  SecondSeparator := Pos('|', Copy(ProgressText, FirstSeparator + 1, Length(ProgressText)));
+  if SecondSeparator > 0 then
+    SecondSeparator := SecondSeparator + FirstSeparator;
+  if (FirstSeparator = 0) or (SecondSeparator = 0) then
+    exit;
+
+  try
+    Completed := StrToInt(Copy(ProgressText, 1, FirstSeparator - 1));
+    Total := StrToInt(Copy(ProgressText, FirstSeparator + 1, SecondSeparator - FirstSeparator - 1));
+    MessageText := Trim(Copy(ProgressText, SecondSeparator + 1, Length(ProgressText)));
+    WizardForm.ProgressGauge.Max := Total;
+    WizardForm.ProgressGauge.Position := Completed;
+    WizardForm.StatusLabel.Caption := MessageText;
+  except
+    // Ignore a partially written progress update and try again on the next poll.
+  end;
+end;
+
+procedure RunRuntimeSetup;
+var
+  SetupHandle: Integer;
+  ExitCode: Cardinal;
+  Parameters: String;
+begin
+  Parameters := '-NoLogo -NoProfile -ExecutionPolicy Bypass -File "' +
+    ExpandConstant('{app}\scripts\setup-runtime.ps1') + '" -InstallRoot "' +
+    ExpandConstant('{app}') + '" -ProgressPath "' +
+    ExpandConstant('{app}\setup-progress.txt') + '"';
+
+  if not Exec(ExpandConstant('{sys}\WindowsPowerShell\v1.0\powershell.exe'),
+    Parameters, '', SW_HIDE, ewNoWait, SetupHandle) then
+    RaiseException('Could not start the DevStack runtime setup process.');
+
+  repeat
+    UpdateRuntimeProgress;
+    WizardForm.ProcessMessages;
+  until WaitForSingleObject(SetupHandle, 250) <> WAIT_TIMEOUT;
+
+  UpdateRuntimeProgress;
+  if not GetExitCodeProcess(SetupHandle, ExitCode) then
+    RaiseException('Could not determine the runtime setup result.');
+  CloseHandle(SetupHandle);
+
+  if ExitCode <> 0 then
+    RaiseException('Runtime download or MariaDB initialization failed. Review the setup log and try again.');
+end;
+
 procedure VerifyRuntimeSetup;
 begin
   if not FileExists(ExpandConstant('{app}\.devstack-ready')) then
     RaiseException('Runtime download or MariaDB initialization failed. Review the setup log and try again.');
+end;
+
+procedure CurStepChanged(CurStep: TSetupStep);
+begin
+  if CurStep = ssPostInstall then
+  begin
+    RunRuntimeSetup;
+    VerifyRuntimeSetup;
+  end;
 end;

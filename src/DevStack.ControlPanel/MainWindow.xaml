@@ -1,7 +1,7 @@
 <Window x:Class="DevStack.ControlPanel.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="DevStack" Height="520" Width="760"
+        Title="DevStack" Height="560" Width="760"
         MinHeight="420" MinWidth="640"
         Background="#F5F7FA">
     <Grid Margin="24">
@@ -9,6 +9,7 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
@@ -27,6 +28,12 @@
                     <TextBlock Text="Apache" FontWeight="SemiBold" />
                     <TextBlock x:Name="ApacheStatus" Text="Stopped" Foreground="#B42318" Margin="0,6,0,0" />
                     <TextBlock Text="127.0.0.1:8080" Foreground="#667085" Margin="0,2,0,0" />
+                    <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+                        <Button x:Name="StartApacheButton" Content="Start" Padding="12,6" Margin="0,0,8,0"
+                                Click="StartApache_Click" />
+                        <Button x:Name="StopApacheButton" Content="Stop" Padding="12,6"
+                                Click="StopApache_Click" />
+                    </StackPanel>
                 </StackPanel>
             </Border>
             <Border Grid.Column="1" Background="White" CornerRadius="8" Padding="16" Margin="8,0,0,0">
@@ -34,6 +41,12 @@
                     <TextBlock Text="MariaDB" FontWeight="SemiBold" />
                     <TextBlock x:Name="MariaDbStatus" Text="Stopped" Foreground="#B42318" Margin="0,6,0,0" />
                     <TextBlock Text="127.0.0.1:3307" Foreground="#667085" Margin="0,2,0,0" />
+                    <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+                        <Button x:Name="StartMariaDbButton" Content="Start" Padding="12,6" Margin="0,0,8,0"
+                                Click="StartMariaDb_Click" />
+                        <Button x:Name="StopMariaDbButton" Content="Stop" Padding="12,6"
+                                Click="StopMariaDb_Click" />
+                    </StackPanel>
                 </StackPanel>
             </Border>
         </Grid>
@@ -44,7 +57,16 @@
                  Background="#101828" Foreground="#EAECF0" BorderThickness="0"
                  Padding="12" />
 
-        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,16,0,8">
+            <Button Content="PHP extensions" Padding="18,9" Margin="0,0,8,0"
+                    Click="PhpExtensions_Click" />
+            <Button Content="OPcache settings" Padding="18,9"
+                    Click="OpcacheSettings_Click" />
+        </StackPanel>
+
+        <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button x:Name="ChangeRootPasswordButton" Content="Set root password" Padding="18,9" Margin="0,0,8,0"
+                    Click="ChangeRootPassword_Click" />
             <Button x:Name="OpenPhpMyAdminButton" Content="Open phpMyAdmin" Padding="18,9" Margin="0,0,8,0"
                     Click="OpenPhpMyAdmin_Click" />
             <Button x:Name="OpenBrowserButton" Content="Open localhost" Padding="18,9" Margin="0,0,8,0"

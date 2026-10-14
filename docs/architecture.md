@@ -78,8 +78,10 @@ and initialized database layout before publishing the setup program.
 
 MariaDB receives a cryptographically random root password during initialization.
 The password is stored using Windows DPAPI for the current user, rather than as
-plain text. No Windows services are registered; Apache and MariaDB remain child
-processes of the control panel.
+plain text. The control panel can change it while MariaDB is running by using a
+temporary client option file restricted to the current Windows user. No Windows
+services are registered; Apache and MariaDB remain child processes of the
+control panel.
 
 ## Secrets
 

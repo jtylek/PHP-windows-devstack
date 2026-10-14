@@ -74,6 +74,8 @@ creates shortcuts automatically.
 
 The alpha installer is not code-signed, so Windows SmartScreen may display an
 unknown-publisher warning. Published releases include a separate SHA-256 file.
+The setup window displays the runtime download, verification, database
+initialization and finalization phases while installation is running.
 
 ### phpMyAdmin and databases
 
@@ -84,6 +86,13 @@ user, run:
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\show-database-password.ps1
 ```
+
+When MariaDB is running, the DevStack control panel also provides **Set root
+password**. The new password must contain at least 8 characters.
+
+The control panel also provides **PHP extensions** and **OPcache settings**.
+Changes are stored under `data/config` and only require restarting Apache;
+MariaDB is not restarted.
 
 In phpMyAdmin, open the **Databases** tab, enter a database name, and choose
 **Create**. phpMyAdmin is installed as the English-only stable 5.2.3 package;

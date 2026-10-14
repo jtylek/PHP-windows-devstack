@@ -1,7 +1,8 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory)]
-    [string]$InstallRoot
+    [string]$InstallRoot,
+    [string]$ProgressPath
 )
 
 $ErrorActionPreference = 'Stop'
@@ -21,10 +22,34 @@ $logsDirectory = Join-Path $installFullPath 'logs'
 $transcriptPath = Join-Path $logsDirectory 'setup-runtime.log'
 Start-Transcript -LiteralPath $transcriptPath -Force | Out-Null
 
+function Write-ProgressState {
+    param(
+        [Parameter(Mandatory)][int]$Completed,
+        [Parameter(Mandatory)][int]$Total,
+        [Parameter(Mandatory)][string]$Message
+    )
+
+    if ([string]::IsNullOrWhiteSpace($ProgressPath)) {
+        return
+    }
+
+    $temporaryPath = "$ProgressPath.$([guid]::NewGuid().ToString('N')).tmp"
+    try {
+        "$Completed|$Total|$Message" | Set-Content -LiteralPath $temporaryPath -Encoding ascii
+        Move-Item -LiteralPath $temporaryPath -Destination $ProgressPath -Force
+    }
+    finally {
+        if (Test-Path -LiteralPath $temporaryPath) {
+            Remove-Item -LiteralPath $temporaryPath -Force -ErrorAction SilentlyContinue
+        }
+    }
+}
+
 try {
 $runtimeRoot = Join-Path $installFullPath 'runtime'
 $manifestPath = Join-Path $runtimeRoot 'manifest/components.json'
 $installer = Join-Path $PSScriptRoot 'install-runtime.ps1'
+Write-ProgressState -Completed 0 -Total 7 -Message 'Preparing runtime downloads...'
 
 function Remove-OptionalRuntimeFiles {
     param([Parameter(Mandatory)][string]$Root)
@@ -70,10 +95,14 @@ $components = @('apache', 'php', 'mariadb')
 for ($index = 0; $index -lt $components.Count; $index++) {
     $component = $components[$index]
     Write-Host "[$($index + 1)/4] Preparing $component..."
+    Write-ProgressState -Completed $index -Total 7 -Message "Downloading and verifying $component..."
     & $installer -Component $component -ManifestPath $manifestPath -DestinationRoot $runtimeRoot -Force
+    Write-ProgressState -Completed ($index + 1) -Total 7 -Message "$component is ready."
 }
 Write-Host '[4/4] Preparing phpMyAdmin...'
+Write-ProgressState -Completed 3 -Total 7 -Message 'Downloading and verifying phpMyAdmin...'
 & $installer -Component phpmyadmin -ManifestPath $manifestPath -DestinationRoot $installFullPath -Force
+Write-ProgressState -Completed 4 -Total 7 -Message 'phpMyAdmin is ready.'
 
 $phpMyAdminRoot = Join-Path $installFullPath 'phpmyadmin'
 $secretBytes = New-Object byte[] 32
@@ -101,6 +130,7 @@ Set-Content -LiteralPath (Join-Path $phpMyAdminRoot 'config.inc.php') -Value $ph
 $dataDirectory = Join-Path $installFullPath 'data/mariadb'
 $systemDatabase = Join-Path $dataDirectory 'mysql'
 if (-not (Test-Path -LiteralPath $systemDatabase -PathType Container)) {
+    Write-ProgressState -Completed 5 -Total 7 -Message 'Initializing MariaDB...'
     [System.IO.Directory]::CreateDirectory($dataDirectory) | Out-Null
 
     $randomBytes = New-Object byte[] 24
@@ -137,9 +167,15 @@ if (-not (Test-Path -LiteralPath $systemDatabase -PathType Container)) {
 
 Remove-OptionalRuntimeFiles -Root $installFullPath
 Write-Host 'Finalizing runtime setup...'
+Write-ProgressState -Completed 6 -Total 7 -Message 'Finalizing DevStack...'
 
 'ready' | Set-Content -LiteralPath (Join-Path $installFullPath '.devstack-ready') -Encoding ascii
+Write-ProgressState -Completed 7 -Total 7 -Message 'DevStack is ready.'
 Write-Host 'DevStack runtime setup completed.'
+}
+catch {
+    Write-ProgressState -Completed 0 -Total 7 -Message "Setup failed: $($_.Exception.Message)"
+    throw
 }
 finally {
     Stop-Transcript | Out-Null

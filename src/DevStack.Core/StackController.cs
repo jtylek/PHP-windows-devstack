@@ -37,6 +37,96 @@ public sealed class StackController : IDisposable
 
         new ConfigurationGenerator(paths, options).Generate();
 
+        ConfigureRuntimePath();
+
+        mariaDb.Start(
+            Path.Combine(paths.MariaDbRoot, "bin", "mariadbd.exe"),
+            $"--defaults-file=\"{Path.Combine(paths.GeneratedConfigRoot, "mariadb.ini")}\" --console",
+            paths.MariaDbRoot);
+
+        StartApache();
+
+        StatusChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    public void StartApacheOnly()
+    {
+        if (IsApacheRunning)
+        {
+            return;
+        }
+        if (!PortProbe.IsAvailable(options.HttpPort))
+        {
+            throw new InvalidOperationException($"Port {options.HttpPort} is already in use.");
+        }
+
+        new ConfigurationGenerator(paths, options).Generate();
+        ConfigureRuntimePath();
+        OutputReceived?.Invoke(this, "Starting Apache...");
+        StartApache();
+        OutputReceived?.Invoke(this, "Apache started.");
+        StatusChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    public void StartMariaDbOnly()
+    {
+        if (IsMariaDbRunning)
+        {
+            return;
+        }
+        if (!PortProbe.IsAvailable(options.MariaDbPort))
+        {
+            throw new InvalidOperationException($"Port {options.MariaDbPort} is already in use.");
+        }
+
+        new ConfigurationGenerator(paths, options).Generate();
+        OutputReceived?.Invoke(this, "Starting MariaDB...");
+        mariaDb.Start(
+            Path.Combine(paths.MariaDbRoot, "bin", "mariadbd.exe"),
+            $"--defaults-file=\"{Path.Combine(paths.GeneratedConfigRoot, "mariadb.ini")}\" --console",
+            paths.MariaDbRoot);
+        OutputReceived?.Invoke(this, "MariaDB started.");
+        StatusChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    public async Task StopAllAsync()
+    {
+        await StopApacheAsync();
+        await StopMariaDbAsync();
+    }
+
+    public async Task StopApacheAsync()
+    {
+        OutputReceived?.Invoke(this, "Stopping Apache...");
+        await apache.StopAsync(TimeSpan.FromSeconds(5));
+        OutputReceived?.Invoke(this, "Apache stopped.");
+        StatusChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    public async Task StopMariaDbAsync()
+    {
+        OutputReceived?.Invoke(this, "Stopping MariaDB...");
+        await mariaDb.StopAsync(TimeSpan.FromSeconds(10));
+        OutputReceived?.Invoke(this, "MariaDB stopped.");
+        StatusChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    public async Task RestartApacheAsync()
+    {
+        if (!IsApacheRunning)
+        {
+            return;
+        }
+
+        await apache.StopAsync(TimeSpan.FromSeconds(5));
+        new ConfigurationGenerator(paths, options).Generate();
+        ConfigureRuntimePath();
+        StartApache();
+        StatusChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    private void ConfigureRuntimePath()
+    {
         // PHP's Apache module loads php8ts.dll and extension dependencies from
         // the PHP directory. Child processes inherit this process-local PATH.
         var currentPath = Environment.GetEnvironmentVariable("PATH") ?? string.Empty;
@@ -46,26 +136,12 @@ public sealed class StackController : IDisposable
             Path.Combine(paths.ApacheRoot, "bin"),
             currentPath);
         Environment.SetEnvironmentVariable("PATH", runtimePath, EnvironmentVariableTarget.Process);
-
-        mariaDb.Start(
-            Path.Combine(paths.MariaDbRoot, "bin", "mariadbd.exe"),
-            $"--defaults-file=\"{Path.Combine(paths.GeneratedConfigRoot, "mariadb.ini")}\" --console",
-            paths.MariaDbRoot);
-
-        apache.Start(
-            Path.Combine(paths.ApacheRoot, "bin", "httpd.exe"),
-            $"-f \"{Path.Combine(paths.GeneratedConfigRoot, "httpd.conf")}\"",
-            paths.ApacheRoot);
-
-        StatusChanged?.Invoke(this, EventArgs.Empty);
     }
 
-    public async Task StopAllAsync()
-    {
-        await apache.StopAsync(TimeSpan.FromSeconds(5));
-        await mariaDb.StopAsync(TimeSpan.FromSeconds(10));
-        StatusChanged?.Invoke(this, EventArgs.Empty);
-    }
+    private void StartApache() => apache.Start(
+        Path.Combine(paths.ApacheRoot, "bin", "httpd.exe"),
+        $"-f \"{Path.Combine(paths.GeneratedConfigRoot, "httpd.conf")}\"",
+        paths.ApacheRoot);
 
     private void ForwardOutput(object? sender, string message) =>
         OutputReceived?.Invoke(this, message);

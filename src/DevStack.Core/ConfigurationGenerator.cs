@@ -2,6 +2,8 @@ namespace DevStack.Core;
 
 public sealed class ConfigurationGenerator(StackPaths paths, StackOptions options)
 {
+    private readonly PhpConfigurationManager phpConfiguration = new(paths);
+
     public void Generate()
     {
         paths.EnsureMutableDirectories();
@@ -30,6 +32,8 @@ public sealed class ConfigurationGenerator(StackPaths paths, StackOptions option
             ["WWW_ROOT"] = Normalize(paths.WebRoot),
             ["LOG_ROOT"] = Normalize(paths.LogRoot),
             ["SESSION_ROOT"] = Normalize(paths.SessionRoot),
+            ["PHP_EXTENSIONS"] = phpConfiguration.RenderExtensions(),
+            ["OPCACHE_SETTINGS"] = phpConfiguration.RenderOpcache(),
             ["HTTP_PORT"] = options.HttpPort.ToString(System.Globalization.CultureInfo.InvariantCulture),
             ["MARIADB_PORT"] = options.MariaDbPort.ToString(System.Globalization.CultureInfo.InvariantCulture)
         };
