@@ -129,12 +129,12 @@ function Initialize-PhpMyAdminStorage {
         $pmaPassword = New-RandomHexSecret -ByteCount 24
         $escapedPassword = Escape-SqlLiteral $pmaPassword
         $sql = "CREATE DATABASE IF NOT EXISTS ``phpmyadmin`` DEFAULT CHARACTER SET utf8 COLLATE utf8_bin; CREATE USER IF NOT EXISTS 'pma'@'127.0.0.1' IDENTIFIED BY '$escapedPassword'; ALTER USER 'pma'@'127.0.0.1' IDENTIFIED BY '$escapedPassword'; GRANT SELECT, INSERT, UPDATE, DELETE, ALTER, CREATE, INDEX, DROP ON ``phpmyadmin``.* TO 'pma'@'127.0.0.1'; FLUSH PRIVILEGES;"
-        $sql | & $clientPath "--defaults-extra-file=$clientConfig" --protocol=tcp --host=127.0.0.1 --port=3307 --user=root --batch 2>&1
+        $sql | & $clientPath "--defaults-extra-file=$clientConfig" --protocol=tcp --host=127.0.0.1 --port=3307 --user=root --batch 2>&1 | Out-Null
         if ($LASTEXITCODE -ne 0) { throw 'Could not create the phpMyAdmin configuration-storage user.' }
 
         $schemaPath = Join-Path $PhpMyAdminRoot 'sql/create_tables.sql'
         if (-not (Test-Path -LiteralPath $schemaPath -PathType Leaf)) { throw "phpMyAdmin configuration-storage schema is missing: $schemaPath" }
-        Get-Content -LiteralPath $schemaPath -Raw | & $clientPath "--defaults-extra-file=$clientConfig" --protocol=tcp --host=127.0.0.1 --port=3307 --user=root --batch 2>&1
+        Get-Content -LiteralPath $schemaPath -Raw | & $clientPath "--defaults-extra-file=$clientConfig" --protocol=tcp --host=127.0.0.1 --port=3307 --user=root --batch 2>&1 | Out-Null
         if ($LASTEXITCODE -ne 0) { throw 'Could not import the phpMyAdmin configuration-storage schema.' }
 
         return @{ User = 'pma'; Password = $pmaPassword }
