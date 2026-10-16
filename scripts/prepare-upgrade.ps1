@@ -21,7 +21,8 @@ function Copy-BackupLink([System.IO.FileSystemInfo]$Entry, [string]$DestinationP
     # Preserve the link itself. /SJ prevents traversing junction targets.
     $destinationDirectory = Split-Path -Parent $DestinationPath
     [IO.Directory]::CreateDirectory($destinationDirectory) | Out-Null
-    & robocopy.exe $Entry.DirectoryName $destinationDirectory $Entry.Name /E /COPY:DAT /R:1 /W:1 /SL /SJ /NFL /NDL /NJH /NJS /NP *> $null
+    $sourceDirectory = Split-Path -Parent $Entry.FullName
+    & robocopy.exe $sourceDirectory $destinationDirectory $Entry.Name /E /COPY:DAT /R:1 /W:1 /SL /SJ /NFL /NDL /NJH /NJS /NP *> $null
     if ($LASTEXITCODE -ge 8) {
         throw "Could not preserve link $($Entry.FullName) (robocopy exit code $LASTEXITCODE)."
     }
