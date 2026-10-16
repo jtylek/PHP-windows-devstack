@@ -105,14 +105,15 @@ MariaDB is not restarted.
 
 DevStack does not have a fixed memory footprint; usage depends on the active
 application and database workload. The SSD development profile reserves a
-1 GiB InnoDB buffer pool, plus other MariaDB buffers and per-connection memory.
+RAM-sized InnoDB buffer pool (512 MiB on 8 GB, 1 GiB on 16 GB, capped at 2 GiB),
+plus other MariaDB buffers and per-connection memory.
 The old 180–350 MB idle-stack estimate does not apply to this profile.
 
 The PHP `memory_limit` and OPcache values are limits or cache capacity, not
 memory permanently allocated at startup. Database temporary-table limits are
 not a total memory cap: concurrent queries can allocate multiple buffers.
-This profile targets a 16 GB development machine; reduce the buffer pool to
-256M or 512M on memory-constrained systems. Check available RAM when running
+Use **MariaDB → Memory settings** to override the automatic size on
+memory-constrained systems. Check available RAM when running
 another database stack alongside PHPDevStack.
 
 ### MariaDB development tuning
@@ -122,6 +123,7 @@ not the generated `runtime/config/generated/mariadb.ini`. See
 [the MariaDB tuning specification](docs/mariadb-development-profile.md) for
 the values, safe application steps, verification query, and durability caveats.
 The slow query log is `logs/mariadb-slow.log` (queries taking over one second).
+The MariaDB card has **Error log** and **Slow log** buttons to open these files.
 
 In phpMyAdmin, open the **Databases** tab, enter a database name, and choose
 **Create**. phpMyAdmin is installed as the English-only stable 5.2.3 package;

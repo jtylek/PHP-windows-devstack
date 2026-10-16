@@ -9,7 +9,7 @@ skip-name-resolve
 log-error="{{LOG_ROOT}}/mariadb-error.log"
 
 # SSD development profile; budget for this pool plus per-connection memory.
-innodb_buffer_pool_size=1G
+innodb_buffer_pool_size={{INNODB_BUFFER_POOL_SIZE}}
 # Faster development imports; OS/power failures may lose recent commits.
 # Use 1 instead when commit durability is required.
 innodb_flush_log_at_trx_commit=2
@@ -22,7 +22,7 @@ max_heap_table_size=64M
 key_buffer_size=16M
 
 # SQL literals can contain sensitive data. Monitor disk usage and rotate logs.
-slow_query_log=ON
+slow_query_log=1
 log_output=FILE
 long_query_time=1
 slow_query_log_file="{{LOG_ROOT}}/mariadb-slow.log"

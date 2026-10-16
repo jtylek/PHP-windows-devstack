@@ -6,15 +6,28 @@ SSDs. These are development defaults, not universal or production tuning.
 
 | Setting | Value |
 | --- | --- |
-| innodb_buffer_pool_size | 1G |
+| innodb_buffer_pool_size | Automatic: 512M on 8 GB, 1G on 16 GB, up to 2G |
 | innodb_flush_log_at_trx_commit | 2 |
 | innodb_log_file_size | 256M |
 | innodb_io_capacity / innodb_io_capacity_max | 1000 / 4000 |
 | table_definition_cache | 1000 |
 | tmp_table_size / max_heap_table_size | 64M / 64M |
 | key_buffer_size | 16M |
-| slow_query_log / log_output / long_query_time | ON / FILE / 1 |
+| slow_query_log / log_output / long_query_time | 1 / FILE / 1 |
 | slow_query_log_file | {{LOG_ROOT}}/mariadb-slow.log |
+
+`{{INNODB_BUFFER_POOL_SIZE}}` is resolved at configuration generation from
+Windows installed physical RAM. The explicit target sizes in the specification
+correspond to **1/16**, not its stated 1/8. Automatic sizing rounds down to 64 MiB,
+with a 128 MiB minimum and 2048 MiB maximum: 2 GB → 128M, 4 GB → 256M,
+8 GB → 512M, 16 GB → 1G, 32 GB or more → 2G. If RAM detection fails, use 256M.
+
+Use **MariaDB → Memory settings** for an override (128–65536 MB, multiples of
+64), or clear the field to restore automatic sizing. This is saved as
+`BufferPoolSizeMb` in `data/config/mariadb-settings.json`; null means automatic.
+An explicit override may exceed the automatic cap. Restart MariaDB to apply it;
+the UI never force-restarts the database or applies live SET GLOBAL changes.
+The **Error log** and **Slow log** buttons open the respective files in Notepad.
 
 The larger buffer pool should reduce repeated InnoDB reads once the working
 set is warm; this is not a guarantee that every query avoids disk access.
@@ -41,9 +54,11 @@ Benchmark imports and ordinary application requests before and after tuning.
 1. Back up the databases with a database-aware backup tool, and save a copy of
    `runtime/templates/mariadb.ini.template` before editing it.
 2. Stop application writes and stop MariaDB cleanly. Do not force-kill it.
-3. Add or update the settings above inside the template's `[mariadbd]` section,
+3. With the updated control panel, add or update the settings above inside the template's `[mariadbd]` section,
    before `[client]`. Preserve existing ports, paths, and other custom settings.
    Do not append duplicate settings or edit only the generated ini.
+   An older panel cannot resolve the new buffer-pool placeholder: for a manual
+   template-only update on a 16 GB machine use the literal `1G` instead.
 4. Start MariaDB from the control panel; it regenerates the configuration.
    MariaDB manages its redo-log resizing. Never delete `ib_logfile0`, `ibdata1`,
    database directories, or any other file in `data/mariadb` to apply this profile.
@@ -60,7 +75,8 @@ SHOW GLOBAL VARIABLES WHERE Variable_name IN (
 SELECT SLEEP(1.2);
 ```
 
-Expect buffer pool 1073741824, redo log 268435456, temporary limits 67108864,
+On a 16 GB machine without an override, expect buffer pool 1073741824,
+redo log 268435456, temporary limits 67108864,
 and key buffer 16777216 bytes. Check `logs/mariadb-slow.log` for the test query.
 MariaDB may expose the slow-log settings using their newer `log_slow_*` aliases.
 If memory pressure grows, reduce the buffer pool and restart cleanly. To undo

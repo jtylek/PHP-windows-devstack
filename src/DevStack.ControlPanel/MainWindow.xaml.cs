@@ -130,6 +130,47 @@ public partial class MainWindow : Window
             MessageBoxButton.OK,
             MessageBoxImage.Information);
 
+    private void MariaDbSettings_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var manager = new MariaDbSettingsManager(StackPaths.FromApplicationDirectory());
+            var dialog = new MariaDbSettingsWindow(manager.Load()) { Owner = this };
+            if (dialog.ShowDialog() != true) return;
+            manager.Save(dialog.Settings);
+            AppendLog("MariaDB memory settings saved. Stop and start MariaDB to apply them; Apache need not restart.");
+        }
+        catch (Exception exception)
+        {
+            MessageBox.Show(this, exception.Message, "Could not save MariaDB settings", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private void MariaDbErrorLog_Click(object sender, RoutedEventArgs e) => OpenMariaDbLog("mariadb-error.log");
+    private void MariaDbSlowLog_Click(object sender, RoutedEventArgs e) => OpenMariaDbLog("mariadb-slow.log");
+
+    private void OpenMariaDbLog(string filename)
+    {
+        try
+        {
+            var path = Path.Combine(StackPaths.FromApplicationDirectory().LogRoot, filename);
+            if (!File.Exists(path))
+            {
+                MessageBox.Show(this, "This log does not exist yet. Start MariaDB; slow queries are recorded when they exceed one second.",
+                    "MariaDB log", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+            var start = new ProcessStartInfo(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "notepad.exe"))
+                { UseShellExecute = false };
+            start.ArgumentList.Add(path);
+            using var process = Process.Start(start);
+        }
+        catch (Exception exception)
+        {
+            MessageBox.Show(this, exception.Message, "Could not open MariaDB log", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
     private void OpenPowerShell_Click(object sender, RoutedEventArgs e)
     {
         try

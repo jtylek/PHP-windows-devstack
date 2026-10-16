@@ -49,13 +49,30 @@ try
     var projectSentinel = Path.Combine(paths.WebRoot, "preserve-test.txt");
     File.WriteAllText(databaseSentinel, "database sentinel");
     File.WriteAllText(projectSentinel, "project sentinel");
+    var mariaDbSettings = new MariaDbSettingsManager(paths);
+    const ulong gib = 1024UL * 1024 * 1024;
+    foreach (var (ram, expected) in new (ulong, int)[] { (2, 128), (4, 256), (8, 512), (16, 1024), (32, 2048), (64, 2048) })
+        Check(MariaDbSettingsManager.CalculateAutomaticSizeMb(ram * gib) == expected, $"Wrong automatic size for {ram} GiB.");
+    Check(MariaDbSettingsManager.CalculateAutomaticSizeMb(0) == 256, "Wrong RAM detection fallback.");
+    Check(mariaDbSettings.RenderBufferPoolSize(16 * gib) == "1G", "Fresh 16 GiB machine must select 1G.");
+    Check(mariaDbSettings.RenderBufferPoolSize(8 * gib) == "512M", "Fresh 8 GiB machine must select 512M.");
+    mariaDbSettings.Save(new MariaDbSettings(512));
+    Check(new MariaDbSettingsManager(paths).RenderBufferPoolSize(32 * gib) == "512M", "Saved override ignored.");
+    mariaDbSettings.Save(new MariaDbSettings());
+    Check(mariaDbSettings.RenderBufferPoolSize(32 * gib) == "2G", "Clearing override must restore automatic sizing.");
+    foreach (var invalid in new[] { 0, -1, 127, 513, 65537 })
+    {
+        try { mariaDbSettings.Save(new MariaDbSettings(invalid)); throw new Exception("Invalid override accepted."); }
+        catch (ArgumentOutOfRangeException) { }
+    }
+    mariaDbSettings.Save(new MariaDbSettings(1024));
     new ConfigurationGenerator(paths, new StackOptions(8088, 3311)).Generate();
     var databaseIni = File.ReadAllText(Path.Combine(paths.GeneratedConfigRoot, "mariadb.ini"));
     var serverSection = databaseIni.Split("[client]", StringSplitOptions.None)[0];
     foreach (var setting in new[] { "innodb_buffer_pool_size=1G", "innodb_flush_log_at_trx_commit=2",
         "innodb_log_file_size=256M", "innodb_io_capacity=1000", "innodb_io_capacity_max=4000",
         "table_definition_cache=1000", "tmp_table_size=64M", "max_heap_table_size=64M",
-        "key_buffer_size=16M", "slow_query_log=ON", "log_output=FILE", "long_query_time=1", "port=3311" })
+        "key_buffer_size=16M", "slow_query_log=1", "log_output=FILE", "long_query_time=1", "port=3311" })
         Check(serverSection.Split('\n').Any(line => line.Trim() == setting), "Missing server setting: " + setting);
     Check(serverSection.Contains(paths.LogRoot.Replace('\\', '/') + "/mariadb-slow.log"), "Wrong slow log path.");
     Check(!databaseIni.Contains("{{"), "Unresolved database template token.");

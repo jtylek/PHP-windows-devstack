@@ -36,12 +36,18 @@ known workarounds change.
 ## Important defaults
 
 - MariaDB uses the SSD development profile documented in
-  `docs/mariadb-development-profile.md`: 1 GiB buffer pool, 256 MiB redo log,
+  `docs/mariadb-development-profile.md`: RAM-sized buffer pool, 256 MiB redo log,
   flush-at-commit 2, and a one-second slow-query log under `logs/`. This trades
   crash durability for development throughput; never describe the loss window
   as a guaranteed maximum of one second. Do not delete redo/data files to apply
   it. Preserve custom settings during installer upgrades. Old low-memory
   estimates no longer apply to this profile.
+- `MariaDbSettingsManager` renders `INNODB_BUFFER_POOL_SIZE` using installed
+  physical RAM / 16 (the explicit requested examples override the spec's /8
+  wording), rounded down to 64 MiB, clamped to 128–2048 MiB; detection fallback
+  256 MiB. `data/config/mariadb-settings.json` holds optional `BufferPoolSizeMb`.
+  The UI saves overrides for next restart and opens both database logs. Do not
+  pass the new template to an old panel that cannot resolve its placeholder.
 
 - Apache: `127.0.0.1:8080`.
 - MariaDB: `127.0.0.1:3307`.
