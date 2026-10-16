@@ -253,7 +253,11 @@ try {
         Assert-NotCancelled
         $groupNumber++
         $sourceDirectory = $group.Name
-        $directoryRelative = $sourceDirectory.Substring($rootPrefix.Length)
+        $directoryRelative = if ($sourceDirectory.Equals($root, [StringComparison]::OrdinalIgnoreCase)) {
+            ''
+        } else {
+            $sourceDirectory.Substring($rootPrefix.Length)
+        }
         $destinationDirectory = if ($directoryRelative) { Join-Path $backup $directoryRelative } else { $backup }
         [IO.Directory]::CreateDirectory($destinationDirectory) | Out-Null
         $records = @($group.Group)
