@@ -157,8 +157,10 @@ try {
     $rootPrefix = $root + '\'
     $copyPlan = New-Object 'System.Collections.Generic.List[object]'
     $reuseCount = 0
+    $planNumber = 0
     foreach ($file in $files) {
         Assert-NotCancelled
+        $planNumber++
         $relative = Get-RelativePath $file $rootPrefix
         $oldFile = $null
         $same = $false
@@ -171,6 +173,9 @@ try {
         }
         if ($same) { $reuseCount++ }
         $copyPlan.Add([pscustomobject]@{ Item = $file; Relative = $relative; Reuse = $same; OldFile = $oldFile })
+        if ($planNumber -eq 1 -or $planNumber % 2000 -eq 0 -or $planNumber -eq $files.Count) {
+            Write-Output "DEVSTACK-UPGRADE|Preparing backup plan ($planNumber of $($files.Count)): $($file.FullName)"
+        }
     }
     foreach ($link in $links) {
         $copyPlan.Add([pscustomobject]@{ Item = $link; Relative = (Get-RelativePath $link $rootPrefix); Reuse = $false; OldFile = $null })
@@ -217,10 +222,18 @@ try {
     # as a verified recovery point, and write a new marker only at the end.
     Remove-Item -LiteralPath (Join-Path $backup 'upgrade-report.txt') -Force -ErrorAction SilentlyContinue
 
-    foreach ($directory in @($items | Where-Object { $_.PSIsContainer -and -not ($_.Attributes -band [IO.FileAttributes]::ReparsePoint) } | Sort-Object { $_.FullName.Length })) {
+    Write-Output 'DEVSTACK-UPGRADE|Building the backup folder structure...'
+    $directoryNumber = 0
+    foreach ($directory in $items) {
+        if (-not $directory.PSIsContainer -or ($directory.Attributes -band [IO.FileAttributes]::ReparsePoint)) { continue }
+        $directoryNumber++
         $relative = Get-RelativePath $directory $rootPrefix
         [IO.Directory]::CreateDirectory((Join-Path $backup $relative)) | Out-Null
+        if ($directoryNumber -eq 1 -or $directoryNumber % 250 -eq 0) {
+            Write-Output "DEVSTACK-UPGRADE|Creating backup directories ($directoryNumber): $($directory.FullName)"
+        }
     }
+    Write-Output "DEVSTACK-UPGRADE|Backup folder structure ready ($directoryNumber directories)."
     $copyNumber = 0
     $planNumber = 0
     $verifiedCopyPlan = New-Object 'System.Collections.Generic.List[object]'
@@ -243,10 +256,15 @@ try {
             Copy-BackupLink -Entry $item -DestinationPath $destination
         }
         else { $verifiedCopyPlan.Add($record) }
+        if (-not $record.Reuse -and -not ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -and
+            ($planNumber -eq 1 -or $planNumber % 2000 -eq 0 -or $planNumber -eq $copyPlan.Count)) {
+            Write-Output "DEVSTACK-UPGRADE|Preparing copy list ($planNumber of $($copyPlan.Count)): $($item.FullName)"
+        }
     }
     # Launch Robocopy once per source directory (in batches), instead of once
     # per file. Process startup dominates when an installation has thousands
     # of small files. Explicit file lists keep unchanged files out of the copy.
+    Write-Output "DEVSTACK-UPGRADE|Grouping $($verifiedCopyPlan.Count) changed files by folder..."
     $copyGroups = @($verifiedCopyPlan | Group-Object { $_.Item.DirectoryName })
     $groupNumber = 0
     foreach ($group in $copyGroups) {
@@ -268,11 +286,17 @@ try {
             $names = @($batch | ForEach-Object { $_.Item.Name })
             $copyNumber += $batch.Count
             Write-Output "DEVSTACK-UPGRADE|Copying changed files ($copyNumber of $copyCount) from $sourceDirectory (directory $groupNumber of $($copyGroups.Count))..."
-            & robocopy.exe $sourceDirectory $destinationDirectory @names /COPY:DAT /IS /IT /R:1 /W:1 /SL /SJ /NFL /NDL /NJH /NJS /NP *> $null
+            & robocopy.exe $sourceDirectory $destinationDirectory @names /COPY:DAT /IS /IT /R:1 /W:1 /SL /SJ /NDL /NJH /NJS /BYTES 2>&1 | ForEach-Object {
+                $robocopyLine = $_.ToString().Trim()
+                if ($robocopyLine -match '^(?:New File|Newer|Older|Changed|Tweaked)\s+' -or $robocopyLine -match '^\d+(?:\.\d+)?%\s+') {
+                    Write-Output "DEVSTACK-UPGRADE|Robocopy: $robocopyLine"
+                }
+            }
+            $robocopyExitCode = $LASTEXITCODE
             # Robocopy uses bit flags: 0 through 7 are successful outcomes;
             # 8 and above mean a real error.
-            if ($LASTEXITCODE -ge 8) {
-                throw "Backup copy failed in $sourceDirectory (robocopy exit code $LASTEXITCODE)."
+            if ($robocopyExitCode -ge 8) {
+                throw "Backup copy failed in $sourceDirectory (robocopy exit code $robocopyExitCode)."
             }
             foreach ($record in $batch) { $verifiedCopyPlan.Add($record) }
         }
@@ -284,7 +308,9 @@ try {
         Assert-NotCancelled
         $fileNumber++
         $file = $record.Item
-        Write-Output "DEVSTACK-UPGRADE|Verifying copied file ($fileNumber of $($verifiedCopyPlan.Count)): $($file.FullName)"
+        if ($fileNumber -eq 1 -or $fileNumber % 100 -eq 0 -or $fileNumber -eq $verifiedCopyPlan.Count) {
+            Write-Output "DEVSTACK-UPGRADE|Verifying copied files ($fileNumber of $($verifiedCopyPlan.Count)): $($file.FullName)"
+        }
         $copy = Join-Path $backup $record.Relative
         if ((Get-FileDigest $file.FullName) -ne (Get-FileDigest $copy)) { throw "Backup verification failed: $($record.Relative)" }
     }

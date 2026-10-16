@@ -66,7 +66,7 @@ To validate the expected repository and package layout:
 
 ### Nontechnical Windows installation
 
-Download the [PHP Windows DevStack 1.0 RC8 installer](https://github.com/jtylek/PHP-windows-devstack/releases/download/v1.0.0-rc.8/PHP-Windows-DevStack-Setup-1.0.0-rc.8-win-x64.exe) and run it. The default installation directory is `C:\PHPDevStack`; installing there requires administrator
+Download the [PHP Windows DevStack 1.0 RC9 installer](https://github.com/jtylek/PHP-windows-devstack/releases/download/v1.0.0-rc.9/PHP-Windows-DevStack-Setup-1.0.0-rc.9-win-x64.exe) and run it. The default installation directory is `C:\PHPDevStack`; installing there requires administrator
 rights. It installs a self-contained control panel, downloads checksum-pinned
 Apache, PHP and MariaDB archives, initializes a local MariaDB instance, and
 creates shortcuts automatically.
@@ -112,8 +112,10 @@ Setup labels the operation **Update existing installation**. Before replacing
 files it checks runtime receipts, requires all processes from that folder to be
 stopped, verifies access to your encrypted password, and offers a checked-by-default
 safety-backup option. Setup estimates the data to copy and the final backup size,
-then warns that copying and verification can take a long time. Cancel stops after
-the current file before setup replaces installation files. If you skip the backup,
+then warns that copying and verification can take a long time. Progress reports
+now cover scanning, preparing the copy plan, creating the backup directory tree,
+Robocopy batches, and verification. Cancel stops before setup replaces
+installation files. If you skip the backup,
 setup warns that it cannot restore the old installation if the update fails. The
 installer maintains one backup at `C:\PHPDevStack-backups\current`: the first
 backup without a previous completed snapshot makes a full copy, and later updates
