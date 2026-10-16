@@ -11,8 +11,8 @@ namespace DevStack.ControlPanel;
 
 public partial class MainWindow : Window
 {
-    private static readonly Brush RunningBrush = new SolidColorBrush(Color.FromRgb(2, 122, 72));
-    private static readonly Brush StoppedBrush = new SolidColorBrush(Color.FromRgb(180, 35, 24));
+    private static readonly System.Windows.Media.Brush RunningBrush = new SolidColorBrush(Color.FromRgb(2, 122, 72));
+    private static readonly System.Windows.Media.Brush StoppedBrush = new SolidColorBrush(Color.FromRgb(180, 35, 24));
     private readonly StackController controller;
     private readonly StackOptions options;
     private readonly PortSettingsManager portSettings;
