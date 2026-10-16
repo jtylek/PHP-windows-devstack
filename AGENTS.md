@@ -35,6 +35,20 @@ known workarounds change.
 
 ## Important defaults
 
+- MariaDB uses the SSD development profile documented in
+  `docs/mariadb-development-profile.md`: RAM-sized buffer pool, 256 MiB redo log,
+  flush-at-commit 2, and a one-second slow-query log under `logs/`. This trades
+  crash durability for development throughput; never describe the loss window
+  as a guaranteed maximum of one second. Do not delete redo/data files to apply
+  it. Preserve custom settings during installer upgrades. Old low-memory
+  estimates no longer apply to this profile.
+- `MariaDbSettingsManager` renders `INNODB_BUFFER_POOL_SIZE` using installed
+  physical RAM / 16 (the explicit requested examples override the spec's /8
+  wording), rounded down to 64 MiB, clamped to 128–2048 MiB; detection fallback
+  256 MiB. `data/config/mariadb-settings.json` holds optional `BufferPoolSizeMb`.
+  The UI saves overrides for next restart and opens both database logs. Do not
+  pass the new template to an old panel that cannot resolve its placeholder.
+
 - Apache: `127.0.0.1:8080`.
 - MariaDB: `127.0.0.1:3307`.
 - SMTP capture: `127.0.0.1:25`.
@@ -47,6 +61,12 @@ known workarounds change.
   updates phpMyAdmin's MariaDB port.
 
 ## PHP and Epesi compatibility
+
+- The control panel's **Open PowerShell** button opens the bundled PHP directory.
+  `PhpTerminal` sets child-process-only PATH/PHPRC/PHP_INI_SCAN_DIR and defines a
+  session-local `php` function with explicit `-c` for the generated ini. Never
+  set machine/user-wide PHPRC: other PHP installations must remain unaffected.
+  Generating terminal settings must not regenerate Apache config or restart services.
 
 - PHP 8.5 built-in extensions include `ctype`, `pdo`, `tokenizer`, and `xml`.
   They do not appear as DLLs and cannot be meaningfully disabled. The extension

@@ -55,6 +55,11 @@
                         <Button x:Name="StopMariaDbButton" Content="■  Stop" Padding="12,6"
                                 Click="StopMariaDb_Click" />
                     </StackPanel>
+                    <WrapPanel Margin="0,8,0,0">
+                        <Button Content="Memory settings" Click="MariaDbSettings_Click" Padding="8,4" Margin="0,0,4,4" />
+                        <Button Content="Error log" Click="MariaDbErrorLog_Click" Padding="8,4" Margin="0,0,4,4" />
+                        <Button Content="Slow log" Click="MariaDbSlowLog_Click" Padding="8,4" Margin="0,0,0,4" />
+                    </WrapPanel>
                 </StackPanel>
             </Border>
             <Border Grid.Column="2" Background="White" CornerRadius="8" Padding="16" Margin="8,0,0,0">
@@ -78,7 +83,9 @@
                  Background="#101828" Foreground="#EAECF0" BorderThickness="0"
                  Padding="12" />
 
-        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,8">
+        <WrapPanel Grid.Row="3" HorizontalAlignment="Right" Margin="0,16,0,8">
+            <Button Content="Open PowerShell" Padding="18,9" Margin="0,0,8,0"
+                    ToolTip="Open bundled PHP with PHPDevStack's php.ini" Click="OpenPowerShell_Click" />
             <Button Content="PHP extensions" Padding="18,9" Margin="0,0,8,0"
                     Click="PhpExtensions_Click" />
             <Button Content="OPcache settings" Padding="18,9"
@@ -87,7 +94,7 @@
                     Click="PortsSettings_Click" />
             <Button x:Name="SmtpCaptureButton" Content="SMTP Mail Capture" Padding="18,9" Margin="8,0,0,0"
                     Click="SmtpCapture_Click" />
-        </StackPanel>
+        </WrapPanel>
 
         <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right">
             <Button x:Name="ChangeRootPasswordButton" Content="Set root password" Padding="18,9" Margin="0,0,8,0"

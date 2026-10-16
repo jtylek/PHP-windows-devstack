@@ -1,0 +1,18 @@
+<Window x:Class="DevStack.ControlPanel.MariaDbSettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="MariaDB memory settings" Width="490" SizeToContent="Height"
+        ResizeMode="NoResize" WindowStartupLocation="CenterOwner">
+    <StackPanel Margin="20">
+        <TextBlock Text="InnoDB buffer pool" FontSize="21" FontWeight="SemiBold" />
+        <TextBlock x:Name="AutomaticSummary" TextWrapping="Wrap" Margin="0,12,0,8" />
+        <TextBlock Text="Override in MB (blank = automatic):" Margin="0,8,0,4" />
+        <TextBox x:Name="BufferPoolBox" Padding="8" />
+        <TextBlock Text="Use multiples of 64 MB, from 128 to 65536. An override can exceed the automatic cap. Leave RAM for PHP, Windows, and other databases. Changes take effect on the next MariaDB start; no database files are changed."
+                   TextWrapping="Wrap" Margin="0,12,0,16" />
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Content="Cancel" IsCancel="True" Padding="16,8" Margin="0,0,8,0" />
+            <Button Content="Save" IsDefault="True" Padding="16,8" Click="Save_Click" />
+        </StackPanel>
+    </StackPanel>
+</Window>

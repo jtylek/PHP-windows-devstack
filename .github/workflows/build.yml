@@ -19,3 +19,6 @@ jobs:
       - name: Validate and build
         shell: pwsh
         run: ./scripts/build.ps1
+      - name: Check PHP terminal configuration
+        shell: pwsh
+        run: dotnet run --project tests/DevStack.TerminalChecks/DevStack.TerminalChecks.csproj

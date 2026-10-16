@@ -4,6 +4,12 @@ public sealed class ConfigurationGenerator(StackPaths paths, StackOptions option
 {
     private readonly PhpConfigurationManager phpConfiguration = new(paths);
 
+    public void GeneratePhpConfiguration()
+    {
+        paths.EnsureMutableDirectories();
+        Render("php.ini.template", "php.ini");
+    }
+
     public void Generate()
     {
         paths.EnsureMutableDirectories();
@@ -44,6 +50,10 @@ public sealed class ConfigurationGenerator(StackPaths paths, StackOptions option
         {
             contents = contents.Replace($"{{{{{value.Key}}}}}", value.Value, StringComparison.Ordinal);
         }
+
+        if (contents.Contains("{{INNODB_BUFFER_POOL_SIZE}}", StringComparison.Ordinal))
+            contents = contents.Replace("{{INNODB_BUFFER_POOL_SIZE}}",
+                new MariaDbSettingsManager(paths).RenderBufferPoolSize(), StringComparison.Ordinal);
 
         if (contents.Contains("{{", StringComparison.Ordinal))
         {
