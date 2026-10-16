@@ -6,14 +6,14 @@ namespace DevStack.ControlPanel;
 
 public partial class PhpExtensionsWindow : Window
 {
-    private readonly List<(PhpExtensionState State, CheckBox CheckBox)> entries = [];
+    private readonly List<(PhpExtensionState State, System.Windows.Controls.CheckBox CheckBox)> entries = [];
 
     public PhpExtensionsWindow(IEnumerable<PhpExtensionState> states)
     {
         InitializeComponent();
         foreach (var state in states)
         {
-            var checkBox = new CheckBox
+            var checkBox = new System.Windows.Controls.CheckBox
             {
                 Content = state.Available ? state.Name : $"{state.Name} (not included)",
                 IsChecked = state.Enabled,
