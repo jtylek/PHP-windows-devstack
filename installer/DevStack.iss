@@ -1,5 +1,5 @@
 #define MyAppName "PHP Windows DevStack"
-#define MyAppVersion "1.0.0-rc.5"
+#define MyAppVersion "1.0.0-rc.6"
 #define MyAppPublisher "PHP Windows DevStack"
 #define MyAppExeName "DevStack.ControlPanel.exe"
 
@@ -23,10 +23,10 @@ DisableWelcomePage=no
 SetupLogging=yes
 CloseApplications=no
 UninstallDisplayIcon={app}\{#MyAppExeName}
-VersionInfoVersion=1.0.0.5
+VersionInfoVersion=1.0.0.6
 VersionInfoDescription=PHP Windows DevStack online installer
 VersionInfoProductName=PHP Windows DevStack
-VersionInfoProductVersion=1.0.0.5
+VersionInfoProductVersion=1.0.0.6
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
@@ -68,6 +68,17 @@ Type: files; Name: "{app}\setup-progress.txt"
 var
   UpgradeReport: String;
 
+procedure SetUpgradeProgress(const MessageText: String);
+begin
+  { wpPreparing normally shows PreparingLabel; StatusLabel alone is not
+    reliably visible on this page in all Inno Setup themes. }
+  WizardForm.PreparingLabel.Caption := MessageText;
+  WizardForm.StatusLabel.Caption := MessageText;
+  WizardForm.PreparingLabel.Refresh;
+  WizardForm.StatusLabel.Refresh;
+  WizardForm.Refresh;
+end;
+
 procedure UpgradePreflightLog(const S: String; const Error, FirstLine: Boolean);
 var
   MessageText: String;
@@ -75,8 +86,7 @@ begin
   MessageText := Trim(S);
   if Pos('DEVSTACK-UPGRADE|', MessageText) = 1 then
   begin
-    WizardForm.StatusLabel.Caption := Copy(MessageText, Length('DEVSTACK-UPGRADE|') + 1, MaxInt);
-    WizardForm.Refresh;
+    SetUpgradeProgress(Copy(MessageText, Length('DEVSTACK-UPGRADE|') + 1, MaxInt));
   end;
 end;
 
@@ -105,7 +115,7 @@ begin
   Parameters := '-NoLogo -NoProfile -ExecutionPolicy Bypass -File "' + ExpandConstant('{tmp}\prepare-upgrade.ps1') +
     '" -InstallRoot "' + ExpandConstant('{app}') + '" -ManifestPath "' + ExpandConstant('{tmp}\upgrade-components.json') +
     '" -ResultPath "' + ExpandConstant('{tmp}\upgrade-report.txt') + '"';
-  WizardForm.StatusLabel.Caption := 'Checking installation before update...';
+  SetUpgradeProgress('Checking the existing installation before update...');
   if not ExecAndLogOutput(ExpandConstant('{sys}\WindowsPowerShell\v1.0\powershell.exe'),
     Parameters, '', SW_HIDE, ewWaitUntilTerminated, ExitCode, @UpgradePreflightLog) then
   begin

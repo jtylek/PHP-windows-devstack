@@ -14,6 +14,32 @@ function Get-FileDigest([string]$Path) {
     finally { $sha.Dispose(); $stream.Dispose() }
 }
 
+function Copy-BackupEntry([System.IO.FileSystemInfo]$Entry, [string]$DestinationRoot) {
+    # Copy reparse points as links, never by walking into their targets.  This
+    # matters for Composer links and project junctions outside the stack.
+    if ($Entry.PSIsContainer) {
+        & robocopy.exe $Entry.FullName (Join-Path $DestinationRoot $Entry.Name) /E /COPY:DAT /DCOPY:DAT /SL /SJ /R:1 /W:1 /NDL /NJH /NJS /NP |
+            ForEach-Object {
+                if ($_ -match '^\s*(?:\d+%)?\s*(?:New File|Newer|Older|Changed)\s+.*?\s{2,}(.+?)\s*$') {
+                    Write-Output "DEVSTACK-UPGRADE|Copying: $($matches[1])"
+                }
+            }
+    }
+    else {
+        & robocopy.exe $Entry.DirectoryName $DestinationRoot $Entry.Name /COPY:DAT /R:1 /W:1 /SL /SJ /NDL /NJH /NJS /NP |
+            ForEach-Object {
+                if ($_ -match '^\s*(?:\d+%)?\s*(?:New File|Newer|Older|Changed)\s+.*?\s{2,}(.+?)\s*$') {
+                    Write-Output "DEVSTACK-UPGRADE|Copying: $($matches[1])"
+                }
+            }
+    }
+    # Robocopy uses bit flags: 0 through 7 are successful copy outcomes;
+    # 8 and above mean a real error.
+    if ($LASTEXITCODE -ge 8) {
+        throw "Backup copy failed for $($Entry.Name) (robocopy exit code $LASTEXITCODE)."
+    }
+}
+
 try {
     $root = [IO.Path]::GetFullPath($InstallRoot).TrimEnd('\')
     if (-not (Test-Path -LiteralPath $root)) {
@@ -67,9 +93,15 @@ try {
     # templates, DPAPI secrets and database files together. Project trees often
     # contain Composer links or junctions. Keep links as links: their targets are
     # not overwritten by setup and should not be followed into unrelated folders.
+    Write-Output 'DEVSTACK-UPGRADE|Preparing a safety backup of your current installation...'
     $all = @(Get-Item -LiteralPath $root) + @(Get-ChildItem -LiteralPath $root -Recurse -Force)
     $links = @($all | Where-Object { $_.Attributes -band [IO.FileAttributes]::ReparsePoint })
+    $files = @($all | Where-Object { -not $_.PSIsContainer -and -not ($_.Attributes -band [IO.FileAttributes]::ReparsePoint) })
+    $bytes = [Int64](($files | Measure-Object -Property Length -Sum).Sum)
+    $sizeMiB = [Math]::Round($bytes / 1MB, 1)
+    Write-Output "DEVSTACK-UPGRADE|Backup plan: $($files.Count) files ($sizeMiB MiB). Starting now..."
     $backup = $root + '-backups\' + [DateTime]::Now.ToString('yyyyMMdd-HHmmss') + '-' + [Guid]::NewGuid().ToString('N').Substring(0,8)
+    Write-Output 'DEVSTACK-UPGRADE|Creating the backup folder...'
     [IO.Directory]::CreateDirectory($backup) | Out-Null
     $acl = New-Object Security.AccessControl.DirectorySecurity
     $acl.SetAccessRuleProtection($true, $false)
@@ -83,11 +115,10 @@ try {
     $entryNumber = 0
     foreach ($entry in $entries) {
         $entryNumber++
-        Write-Output "DEVSTACK-UPGRADE|Backing up $($entry.Name) ($entryNumber of $($entries.Count))"
-        Copy-Item -LiteralPath $entry.FullName -Destination $backup -Recurse -Force
+        Write-Output "DEVSTACK-UPGRADE|Creating backup: $($entry.Name) ($entryNumber of $($entries.Count))"
+        Copy-BackupEntry -Entry $entry -DestinationRoot $backup
     }
     # Verify every copied file, including databases, before allowing setup to overwrite.
-    $files = @($all | Where-Object { -not $_.PSIsContainer -and -not ($_.Attributes -band [IO.FileAttributes]::ReparsePoint) })
     $fileNumber = 0
     foreach ($file in $files) {
         $fileNumber++

@@ -78,6 +78,10 @@ try {
     $report = Get-Content "$root\logs\upgrade-report.txt" -Raw
     if ($report -notmatch 'Verified full backup:' -or ([regex]::Matches($report, 'Does not need updating - skipped')).Count -ne 4) { throw 'Missing backup/skip report.' }
     if ($report -notmatch 'Preserved 1 symbolic link/junction as links') { throw 'Project junction was not reported.' }
+    $backupPath = ([regex]::Match($report, '(?m)^Verified full backup:\s*(.+)$')).Groups[1].Value.Trim()
+    if (-not $backupPath) { throw 'Could not determine the backup path.' }
+    $backupJunction = Get-Item -LiteralPath (Join-Path $backupPath 'www\linked-project') -Force
+    if (-not ($backupJunction.Attributes -band [IO.FileAttributes]::ReparsePoint)) { throw 'Backup dereferenced the project junction instead of preserving it as a link.' }
     if ((Get-Content (Join-Path $junctionTarget 'external-project.txt') -Raw) -ne 'external project sentinel') { throw 'Project junction target was changed.' }
     $template = Get-Content "$root\runtime\templates\mariadb.ini.template" -Raw
     if ($template -notmatch 'innodb_buffer_pool_size=\{\{INNODB_BUFFER_POOL_SIZE\}\}') { throw 'New MariaDB defaults were not merged.' }
