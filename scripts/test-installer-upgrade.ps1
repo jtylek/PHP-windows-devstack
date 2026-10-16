@@ -105,7 +105,37 @@ try {
     if ($LASTEXITCODE -ne 0 -or $settings[0] -notmatch '^536870912\s+268435456\s+2\s+1000\s+4000\s+1000\s+67108864\s+67108864\s+16777216\s+1\s+1') { throw 'Live database tuning values differ from the requested profile/override.' }
     Stop-TestDatabase
     if ((Get-Content "$root\logs\mariadb-slow.log" -Raw) -notmatch 'SLEEP\(1.2\)') { throw 'Slow query log did not record the test query.' }
-    Write-Host 'In-place update passed: real database, projects, secrets, settings, custom templates and unchanged runtime receipts preserved.'
+
+    # A second update must build a complete snapshot while reusing unchanged
+    # files from the first verified snapshot. Changed files are physically copied.
+    [IO.File]::WriteAllText("$root\www\upgrade-project.txt", 'changed project sentinel')
+    $secondSetup = Start-Process $SetupPath -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART',"/DIR=$root", "/LOG=$scratch\installer-second.log" -Wait -PassThru
+    if ($secondSetup.ExitCode -ne 0) {
+        Get-Content "$scratch\installer-second.log"
+        Get-Content "$root\logs\setup-runtime.log" -ErrorAction SilentlyContinue
+        throw "Second in-place update failed: $($secondSetup.ExitCode)"
+    }
+    $secondReport = Get-Content "$root\logs\upgrade-report.txt" -Raw
+    if ($secondReport -notmatch 'Incremental backup sync: kept \d+ unchanged files') { throw 'Second update did not report an incremental backup sync.' }
+    $secondBackup = ([regex]::Match($secondReport, '(?m)^Verified full backup:\s*(.+)$')).Groups[1].Value.Trim()
+    if (-not $secondBackup) { throw 'Could not determine the second backup path.' }
+    if ($secondBackup -ne (Join-Path "$root-backups" 'current')) { throw 'Updates must maintain one stable backup folder.' }
+    $backupFolders = @(Get-ChildItem "$root-backups" -Directory -Force)
+    if ($backupFolders.Count -ne 1 -or $backupFolders[0].Name -ne 'current') { throw 'Older timestamped backup folders were not cleaned up after the current backup was verified.' }
+    if ((Get-Content "$secondBackup\www\upgrade-project.txt" -Raw) -ne 'changed project sentinel') { throw 'Second backup does not contain the updated project file.' }
+    if ((Get-Content "$secondBackup\www\index.php" -Raw) -ne '<?php echo "user project preserved";') { throw 'Incremental sync did not retain an unchanged project file.' }
+    $snapshotIndexHash = (Get-FileHash "$secondBackup\www\index.php").Hash
+    [IO.File]::WriteAllText("$root\www\index.php", '<?php echo "live file changed after backup";')
+    if ((Get-FileHash "$secondBackup\www\index.php").Hash -ne $snapshotIndexHash) { throw 'Changing a live file modified the completed backup snapshot.' }
+
+    # Skipping backup must bypass the inventory/copy/verification work entirely.
+    $backupReportHash = (Get-FileHash "$secondBackup\upgrade-report.txt").Hash
+    $skipSetup = Start-Process $SetupPath -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART',"/DIR=$root",'/TASKS=!backup',"/LOG=$scratch\installer-skip-backup.log" -Wait -PassThru
+    if ($skipSetup.ExitCode -ne 0) { Get-Content "$scratch\installer-skip-backup.log"; throw "Update with backup skipped failed: $($skipSetup.ExitCode)" }
+    $skipReport = Get-Content "$root\logs\upgrade-report.txt" -Raw
+    if ($skipReport -notmatch 'Backup skipped by user' -or $skipReport -notmatch 'WARNING: The user chose to skip') { throw 'Skipped-backup warning is missing.' }
+    if ((Get-FileHash "$secondBackup\upgrade-report.txt").Hash -ne $backupReportHash) { throw 'Skipping backup modified the existing recovery backup.' }
+    Write-Host 'In-place updates passed: incremental single-folder backup and backup-skip behavior verified.'
 }
 finally {
     if ($null -ne $server -and -not $server.HasExited) {

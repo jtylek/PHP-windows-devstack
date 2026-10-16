@@ -1,5 +1,5 @@
 #define MyAppName "PHP Windows DevStack"
-#define MyAppVersion "1.0.0-rc.7"
+#define MyAppVersion "1.0.0-rc.8"
 #define MyAppPublisher "PHP Windows DevStack"
 #define MyAppExeName "DevStack.ControlPanel.exe"
 
@@ -23,16 +23,17 @@ DisableWelcomePage=no
 SetupLogging=yes
 CloseApplications=no
 UninstallDisplayIcon={app}\{#MyAppExeName}
-VersionInfoVersion=1.0.0.7
+VersionInfoVersion=1.0.0.8
 VersionInfoDescription=PHP Windows DevStack online installer
 VersionInfoProductName=PHP Windows DevStack
-VersionInfoProductVersion=1.0.0.7
+VersionInfoProductVersion=1.0.0.8
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Tasks]
 Name: "desktopicon"; Description: "Create a desktop shortcut"; GroupDescription: "Additional shortcuts:"
+Name: "backup"; Description: "Create a safety backup when updating an existing installation (recommended; may take a long time)"; Flags: checkablealone
 
 [Files]
 Source: "..\artifacts\publish\*"; DestDir: "{app}"; Excludes: "www\*,runtime\templates\*"; Flags: ignoreversion recursesubdirs createallsubdirs
@@ -68,6 +69,11 @@ Type: files; Name: "{app}\setup-progress.txt"
 var
   UpgradeReport: String;
   UpgradeProgressPage: TOutputProgressWizardPage;
+  UpgradeCancelButton: TNewButton;
+  UpgradeMinimizeButton: TNewButton;
+
+function ShowWindow(hWnd: THandle; nCmdShow: Integer): Boolean;
+  external 'ShowWindow@user32.dll stdcall';
 
 procedure SetUpgradeProgress(const MessageText: String);
 begin
@@ -75,12 +81,35 @@ begin
     UpgradeProgressPage.SetText(MessageText, 'Your existing projects and databases are being protected.');
 end;
 
+procedure CancelUpgradeProgress(Sender: TObject);
+begin
+  SaveStringToFile(ExpandConstant('{tmp}\upgrade-cancel.txt'), 'cancel', False);
+  UpgradeCancelButton.Enabled := False;
+  SetUpgradeProgress('Cancellation requested. Setup will stop after the current file and will not replace installation files.');
+end;
+
+procedure MinimizeUpgradeProgress(Sender: TObject);
+begin
+  ShowWindow(WizardForm.Handle, 6);
+end;
+
 procedure UpgradePreflightLog(const S: String; const Error, FirstLine: Boolean);
 var
   MessageText: String;
 begin
   MessageText := Trim(S);
-  if Pos('DEVSTACK-UPGRADE|', MessageText) = 1 then
+  if Pos('DEVSTACK-UPGRADE|BACKUP_CONFIRM|', MessageText) = 1 then
+  begin
+    MessageText := Copy(MessageText, Length('DEVSTACK-UPGRADE|BACKUP_CONFIRM|') + 1, MaxInt);
+    SetUpgradeProgress('Backup estimate is ready. Review the estimate and choose whether to continue.');
+    if MsgBox(MessageText + #13#10#13#10 +
+      'Creating and verifying the backup can take a long time. Please be patient. Continue with the backup?',
+      mbConfirmation, MB_OKCANCEL) = IDOK then
+      SaveStringToFile(ExpandConstant('{tmp}\upgrade-decision.txt'), 'continue', False)
+    else
+      SaveStringToFile(ExpandConstant('{tmp}\upgrade-decision.txt'), 'cancel', False);
+  end
+  else if Pos('DEVSTACK-UPGRADE|', MessageText) = 1 then
   begin
     SetUpgradeProgress(Copy(MessageText, Length('DEVSTACK-UPGRADE|') + 1, MaxInt));
   end;
@@ -91,7 +120,10 @@ begin
   if CurPageID = wpReady then
   begin
     if FileExists(ExpandConstant('{app}\DevStack.ControlPanel.exe')) then
-      WizardForm.ReadyMemo.Lines.Insert(0, 'UPDATE EXISTING INSTALLATION - a verified full backup is required before replacing files.')
+      if WizardIsTaskSelected('backup') then
+        WizardForm.ReadyMemo.Lines.Insert(0, 'UPDATE EXISTING INSTALLATION - a safety backup is selected. Setup will estimate its size and warn before creating it; the copy and verification can take a long time.')
+      else
+        WizardForm.ReadyMemo.Lines.Insert(0, 'UPDATE EXISTING INSTALLATION - backup skipped by user. If setup fails, there will be no setup-created rollback copy.')
     else if DirExists(ExpandConstant('{app}')) then
       WizardForm.ReadyMemo.Lines.Insert(0, 'EXISTING FOLDER - setup will verify it before making changes.')
     else
@@ -103,15 +135,23 @@ function PrepareToInstall(var NeedsRestart: Boolean): String;
 var
   ExitCode: Integer;
   Parameters: String;
+  CancelParameter: String;
+  DecisionParameter: String;
   ReportText: AnsiString;
   Started: Boolean;
+  IsUpgrade: Boolean;
 begin
   Result := '';
+  IsUpgrade := FileExists(ExpandConstant('{app}\DevStack.ControlPanel.exe'));
   ExtractTemporaryFile('prepare-upgrade.ps1');
   ExtractTemporaryFile('upgrade-components.json');
   Parameters := '-NoLogo -NoProfile -ExecutionPolicy Bypass -File "' + ExpandConstant('{tmp}\prepare-upgrade.ps1') +
     '" -InstallRoot "' + ExpandConstant('{app}') + '" -ManifestPath "' + ExpandConstant('{tmp}\upgrade-components.json') +
     '" -ResultPath "' + ExpandConstant('{tmp}\upgrade-report.txt') + '"';
+  CancelParameter := ' -CancelFile "' + ExpandConstant('{tmp}\upgrade-cancel.txt') + '"';
+  DecisionParameter := '';
+  if IsUpgrade and WizardIsTaskSelected('backup') and not WizardSilent then
+    DecisionParameter := ' -DecisionFile "' + ExpandConstant('{tmp}\upgrade-decision.txt') + '"';
   Started := False;
   try
     if not WizardSilent then
@@ -120,8 +160,12 @@ begin
       UpgradeProgressPage.Show;
       Started := True;
     end;
+    DeleteFile(ExpandConstant('{tmp}\upgrade-cancel.txt'));
+    DeleteFile(ExpandConstant('{tmp}\upgrade-decision.txt'));
+    if IsUpgrade and not WizardIsTaskSelected('backup') then
+      Parameters := Parameters + ' -SkipBackup';
     if not ExecAndLogOutput(ExpandConstant('{sys}\WindowsPowerShell\v1.0\powershell.exe'),
-      Parameters, '', SW_HIDE, ewWaitUntilTerminated, ExitCode, @UpgradePreflightLog) then
+      Parameters + CancelParameter + DecisionParameter, '', SW_HIDE, ewWaitUntilTerminated, ExitCode, @UpgradePreflightLog) then
     begin
       Result := 'Could not run update preflight. No application files have been replaced.';
       exit;
@@ -144,6 +188,22 @@ procedure InitializeWizard;
 begin
   UpgradeProgressPage := CreateOutputProgressPage(
     'Preparing to Install', 'Setup is preparing to update PHP Windows DevStack.');
+  UpgradeCancelButton := TNewButton.Create(WizardForm);
+  UpgradeCancelButton.Parent := UpgradeProgressPage.Surface;
+  UpgradeCancelButton.Caption := 'Cancel';
+  UpgradeCancelButton.Width := 90;
+  UpgradeCancelButton.Height := 25;
+  UpgradeCancelButton.Left := UpgradeProgressPage.SurfaceWidth - UpgradeCancelButton.Width - 12;
+  UpgradeCancelButton.Top := UpgradeProgressPage.SurfaceHeight - UpgradeCancelButton.Height - 12;
+  UpgradeCancelButton.OnClick := @CancelUpgradeProgress;
+  UpgradeMinimizeButton := TNewButton.Create(WizardForm);
+  UpgradeMinimizeButton.Parent := UpgradeProgressPage.Surface;
+  UpgradeMinimizeButton.Caption := 'Minimize';
+  UpgradeMinimizeButton.Width := 90;
+  UpgradeMinimizeButton.Height := 25;
+  UpgradeMinimizeButton.Left := UpgradeProgressPage.SurfaceWidth - UpgradeCancelButton.Width - UpgradeMinimizeButton.Width - 24;
+  UpgradeMinimizeButton.Top := UpgradeProgressPage.SurfaceHeight - UpgradeMinimizeButton.Height - 12;
+  UpgradeMinimizeButton.OnClick := @MinimizeUpgradeProgress;
   WizardForm.WelcomeLabel2.Caption :=
     'PHP Windows DevStack is a native, portable Windows development environment for PHP applications.' + #13#10#13#10 +
     'Apache HTTP Server, PHP 8.5 and MariaDB with a desktop control panel will be installed.';

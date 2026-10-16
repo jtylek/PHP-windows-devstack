@@ -66,7 +66,7 @@ To validate the expected repository and package layout:
 
 ### Nontechnical Windows installation
 
-Download the [PHP Windows DevStack 1.0 RC7 installer](https://github.com/jtylek/PHP-windows-devstack/releases/download/v1.0.0-rc.7/PHP-Windows-DevStack-Setup-1.0.0-rc.7-win-x64.exe) and run it. The default installation directory is `C:\PHPDevStack`; installing there requires administrator
+Download the [PHP Windows DevStack 1.0 RC8 installer](https://github.com/jtylek/PHP-windows-devstack/releases/download/v1.0.0-rc.8/PHP-Windows-DevStack-Setup-1.0.0-rc.8-win-x64.exe) and run it. The default installation directory is `C:\PHPDevStack`; installing there requires administrator
 rights. It installs a self-contained control panel, downloads checksum-pinned
 Apache, PHP and MariaDB archives, initializes a local MariaDB instance, and
 creates shortcuts automatically.
@@ -110,9 +110,16 @@ uninstall the old version or delete `www` or `data`.
 
 Setup labels the operation **Update existing installation**. Before replacing
 files it checks runtime receipts, requires all processes from that folder to be
-stopped, verifies access to your encrypted password, and makes a SHA-256-verified
-full backup at `C:\PHPDevStack-backups\<timestamp-id>`. Allow disk space for a
-second complete copy. An incomplete/unrecognized installation or a missing runtime
+stopped, verifies access to your encrypted password, and offers a checked-by-default
+safety-backup option. Setup estimates the data to copy and the final backup size,
+then warns that copying and verification can take a long time. Cancel stops after
+the current file before setup replaces installation files. If you skip the backup,
+setup warns that it cannot restore the old installation if the update fails. The
+installer maintains one backup at `C:\PHPDevStack-backups\current`: the first
+backup without a previous completed snapshot makes a full copy, and later updates
+copy only changed files into that folder.
+After the new copy is verified, older timestamped backups made by previous releases
+are removed. An incomplete/unrecognized installation or a missing runtime
 receipt stops the update before files are replaced. Symbolic links and junctions
 are retained as links; their external targets are not followed into the backup
 and are not changed by setup.
