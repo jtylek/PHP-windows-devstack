@@ -1,5 +1,5 @@
 #define MyAppName "PHP Windows DevStack"
-#define MyAppVersion "1.0.0-rc.9"
+#define MyAppVersion "1.0.0-rc.10"
 #define MyAppPublisher "PHP Windows DevStack"
 #define MyAppExeName "DevStack.ControlPanel.exe"
 
@@ -74,6 +74,8 @@ var
 
 function ShowWindow(hWnd: THandle; nCmdShow: Integer): Boolean;
   external 'ShowWindow@user32.dll stdcall';
+function PostWindowMessage(hWnd: THandle; Msg: Cardinal; wParam: Longint; lParam: Longint): Boolean;
+  external 'PostMessageW@user32.dll stdcall';
 
 procedure SetUpgradeProgress(const MessageText: String);
 begin
@@ -90,6 +92,9 @@ end;
 
 procedure MinimizeUpgradeProgress(Sender: TObject);
 begin
+  { Queue the system minimize command so the wizard can finish handling the
+    button click before Windows changes the state of its modal progress page. }
+  PostWindowMessage(WizardForm.Handle, $0112, $F020, 0); { WM_SYSCOMMAND / SC_MINIMIZE }
   ShowWindow(WizardForm.Handle, 6);
 end;
 

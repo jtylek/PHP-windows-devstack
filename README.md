@@ -66,7 +66,7 @@ To validate the expected repository and package layout:
 
 ### Nontechnical Windows installation
 
-Download the [PHP Windows DevStack 1.0 RC9 installer](https://github.com/jtylek/PHP-windows-devstack/releases/download/v1.0.0-rc.9/PHP-Windows-DevStack-Setup-1.0.0-rc.9-win-x64.exe) and run it. The default installation directory is `C:\PHPDevStack`; installing there requires administrator
+Download the [PHP Windows DevStack 1.0 RC10 installer](https://github.com/jtylek/PHP-windows-devstack/releases/download/v1.0.0-rc.10/PHP-Windows-DevStack-Setup-1.0.0-rc.10-win-x64.exe) and run it. The default installation directory is `C:\PHPDevStack`; installing there requires administrator
 rights. It installs a self-contained control panel, downloads checksum-pinned
 Apache, PHP and MariaDB archives, initializes a local MariaDB instance, and
 creates shortcuts automatically.
