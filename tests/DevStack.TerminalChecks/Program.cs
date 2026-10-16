@@ -38,6 +38,30 @@ try
     Check(Environment.GetEnvironmentVariable("PATH") == originalPath && Environment.GetEnvironmentVariable("PHPRC") == originalIni,
         "Terminal configuration must not mutate the parent environment.");
     Console.WriteLine("PHP terminal configuration checks passed.");
+
+    // Verify the real templates render tuning into the server section, retain
+    // selected ports, and never modify user database/project contents.
+    var templates = Path.Combine(Directory.GetCurrentDirectory(), "runtime", "templates");
+    foreach (var file in Directory.GetFiles(templates, "*.template"))
+        File.Copy(file, Path.Combine(paths.TemplateRoot, Path.GetFileName(file)), overwrite: true);
+    paths.EnsureMutableDirectories();
+    var databaseSentinel = Path.Combine(paths.MariaDbDataRoot, "preserve-test.txt");
+    var projectSentinel = Path.Combine(paths.WebRoot, "preserve-test.txt");
+    File.WriteAllText(databaseSentinel, "database sentinel");
+    File.WriteAllText(projectSentinel, "project sentinel");
+    new ConfigurationGenerator(paths, new StackOptions(8088, 3311)).Generate();
+    var databaseIni = File.ReadAllText(Path.Combine(paths.GeneratedConfigRoot, "mariadb.ini"));
+    var serverSection = databaseIni.Split("[client]", StringSplitOptions.None)[0];
+    foreach (var setting in new[] { "innodb_buffer_pool_size=1G", "innodb_flush_log_at_trx_commit=2",
+        "innodb_log_file_size=256M", "innodb_io_capacity=1000", "innodb_io_capacity_max=4000",
+        "table_definition_cache=1000", "tmp_table_size=64M", "max_heap_table_size=64M",
+        "key_buffer_size=16M", "slow_query_log=ON", "log_output=FILE", "long_query_time=1", "port=3311" })
+        Check(serverSection.Split('\n').Any(line => line.Trim() == setting), "Missing server setting: " + setting);
+    Check(serverSection.Contains(paths.LogRoot.Replace('\\', '/') + "/mariadb-slow.log"), "Wrong slow log path.");
+    Check(!databaseIni.Contains("{{"), "Unresolved database template token.");
+    Check(File.ReadAllText(databaseSentinel) == "database sentinel" && File.ReadAllText(projectSentinel) == "project sentinel",
+        "Config generation modified user data.");
+    Console.WriteLine("MariaDB development template checks passed.");
 }
 finally
 {

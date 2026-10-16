@@ -35,6 +35,14 @@ known workarounds change.
 
 ## Important defaults
 
+- MariaDB uses the SSD development profile documented in
+  `docs/mariadb-development-profile.md`: 1 GiB buffer pool, 256 MiB redo log,
+  flush-at-commit 2, and a one-second slow-query log under `logs/`. This trades
+  crash durability for development throughput; never describe the loss window
+  as a guaranteed maximum of one second. Do not delete redo/data files to apply
+  it. Preserve custom settings during installer upgrades. Old low-memory
+  estimates no longer apply to this profile.
+
 - Apache: `127.0.0.1:8080`.
 - MariaDB: `127.0.0.1:3307`.
 - SMTP capture: `127.0.0.1:25`.

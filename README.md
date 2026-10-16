@@ -104,19 +104,24 @@ MariaDB is not restarted.
 ### Memory usage
 
 DevStack does not have a fixed memory footprint; usage depends on the active
-application and database workload. Typical Windows Task Manager readings are:
-
-| State | Approximate RAM |
-| --- | ---: |
-| Control panel only | 50–100 MB |
-| Apache and MariaDB running idle | 180–350 MB |
-| Epesi actively used | 300–700 MB |
-| Heavy imports or reports | May temporarily exceed 1 GB |
+application and database workload. The SSD development profile reserves a
+1 GiB InnoDB buffer pool, plus other MariaDB buffers and per-connection memory.
+The old 180–350 MB idle-stack estimate does not apply to this profile.
 
 The PHP `memory_limit` and OPcache values are limits or cache capacity, not
-memory permanently allocated at startup. For comfortable Epesi development,
-4 GB of system RAM is recommended; 8 GB is preferable when other applications
-are open.
+memory permanently allocated at startup. Database temporary-table limits are
+not a total memory cap: concurrent queries can allocate multiple buffers.
+This profile targets a 16 GB development machine; reduce the buffer pool to
+256M or 512M on memory-constrained systems. Check available RAM when running
+another database stack alongside PHPDevStack.
+
+### MariaDB development tuning
+
+The persistent settings live in `runtime/templates/mariadb.ini.template`,
+not the generated `runtime/config/generated/mariadb.ini`. See
+[the MariaDB tuning specification](docs/mariadb-development-profile.md) for
+the values, safe application steps, verification query, and durability caveats.
+The slow query log is `logs/mariadb-slow.log` (queries taking over one second).
 
 In phpMyAdmin, open the **Databases** tab, enter a database name, and choose
 **Create**. phpMyAdmin is installed as the English-only stable 5.2.3 package;

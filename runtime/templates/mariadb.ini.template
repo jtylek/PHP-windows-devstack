@@ -8,6 +8,25 @@ collation-server=utf8mb4_unicode_ci
 skip-name-resolve
 log-error="{{LOG_ROOT}}/mariadb-error.log"
 
+# SSD development profile; budget for this pool plus per-connection memory.
+innodb_buffer_pool_size=1G
+# Faster development imports; OS/power failures may lose recent commits.
+# Use 1 instead when commit durability is required.
+innodb_flush_log_at_trx_commit=2
+innodb_log_file_size=256M
+innodb_io_capacity=1000
+innodb_io_capacity_max=4000
+table_definition_cache=1000
+tmp_table_size=64M
+max_heap_table_size=64M
+key_buffer_size=16M
+
+# SQL literals can contain sensitive data. Monitor disk usage and rotate logs.
+slow_query_log=ON
+log_output=FILE
+long_query_time=1
+slow_query_log_file="{{LOG_ROOT}}/mariadb-slow.log"
+
 [client]
 host=127.0.0.1
 port={{MARIADB_PORT}}
