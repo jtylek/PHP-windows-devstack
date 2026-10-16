@@ -4,9 +4,11 @@ using System.Security.Cryptography;
 using System.Security.Principal;
 using System.Text;
 using System.Text.Json;
+using System.Runtime.Versioning;
 
 namespace DevStack.Core;
 
+[SupportedOSPlatform("windows")]
 public sealed class PhpMyAdminSignOn(StackPaths paths, StackOptions options)
 {
     private const int TokenLifetimeSeconds = 60;
