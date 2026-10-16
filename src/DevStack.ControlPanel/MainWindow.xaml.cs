@@ -187,8 +187,19 @@ public partial class MainWindow : Window
     private void OpenBrowser_Click(object sender, RoutedEventArgs e) =>
         Process.Start(new ProcessStartInfo($"http://127.0.0.1:{options.HttpPort}") { UseShellExecute = true });
 
-    private void OpenPhpMyAdmin_Click(object sender, RoutedEventArgs e) =>
-        Process.Start(new ProcessStartInfo($"http://127.0.0.1:{options.HttpPort}/phpmyadmin") { UseShellExecute = true });
+    private void OpenPhpMyAdmin_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            new PhpMyAdminSignOn(StackPaths.FromApplicationDirectory(), options).Launch();
+            AppendLog("Opening phpMyAdmin with a one-time local root sign-in.");
+        }
+        catch (Exception exception)
+        {
+            AppendLog($"phpMyAdmin sign-in failed: {exception.Message}");
+            MessageBox.Show(this, exception.Message, "Could not open phpMyAdmin", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
 
     private void StartApache_Click(object sender, RoutedEventArgs e)
     {

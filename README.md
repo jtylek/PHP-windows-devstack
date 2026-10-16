@@ -66,7 +66,7 @@ To validate the expected repository and package layout:
 
 ### Nontechnical Windows installation
 
-Download the [PHP Windows DevStack 1.0 RC3 installer](https://github.com/jtylek/PHP-windows-devstack/releases/download/v1.0.0-rc.3/PHP-Windows-DevStack-Setup-1.0.0-rc.3-win-x64.exe) and run it. The default installation directory is `C:\PHPDevStack`; installing there requires administrator
+Download the [PHP Windows DevStack 1.0 RC4 installer](https://github.com/jtylek/PHP-windows-devstack/releases/download/v1.0.0-rc.4/PHP-Windows-DevStack-Setup-1.0.0-rc.4-win-x64.exe) and run it. The default installation directory is `C:\PHPDevStack`; installing there requires administrator
 rights. It installs a self-contained control panel, downloads checksum-pinned
 Apache, PHP and MariaDB archives, initializes a local MariaDB instance, and
 creates shortcuts automatically.
@@ -123,6 +123,11 @@ equal or newer installed versions display **Does not need updating - skipped**.
 This is not a query of arbitrary latest upstream releases. Cross-series MariaDB
 updates are blocked for a separate database migration. See
 `logs\upgrade-report.txt` and `logs\setup-runtime.log` for the results.
+
+The **Open phpMyAdmin** button signs in locally as `root` without placing the
+password in a URL. It sends a random, one-time token through a local POST form;
+the token expires after one minute and its credential record is removed on first
+use. The internal sign-on endpoint only accepts `127.0.0.1` and `::1`.
 
 If setup fails after replacing files, keep everything stopped. The verified
 backup contains the matching old binaries, templates and data together: rename

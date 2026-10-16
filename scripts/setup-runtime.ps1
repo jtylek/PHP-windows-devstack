@@ -80,6 +80,30 @@ function Escape-SqlLiteral {
     return $Value.Replace('\', '\\').Replace("'", "''")
 }
 
+function Enable-PhpMyAdminSignon {
+    param([Parameter(Mandatory)][string]$InstallRoot, [Parameter(Mandatory)][string]$PhpMyAdminRoot)
+    $config = Join-Path $PhpMyAdminRoot 'config.inc.php'
+    if (-not (Test-Path -LiteralPath $config)) { throw 'phpMyAdmin configuration is missing.' }
+    $contents = Get-Content -LiteralPath $config -Raw
+    if ($contents -notmatch 'PHPDevStack local one-time sign-on') {
+        Add-Content -LiteralPath $config -Value (@(
+            '', '// PHPDevStack local one-time sign-on. Do not change this block manually.',
+            "`$cfg['Servers'][`$i]['auth_type'] = 'signon';",
+            "`$cfg['Servers'][`$i]['SignonSession'] = 'DevStackPhpMyAdmin';",
+            "`$cfg['Servers'][`$i]['SignonURL'] = '/_devstack/phpmyadmin-signon.php';"
+        ) -join [Environment]::NewLine) -Encoding utf8
+    }
+    $template = Join-Path $InstallRoot 'runtime/templates/httpd.conf.template'
+    $httpd = Get-Content -LiteralPath $template -Raw
+    if ($httpd -notmatch 'PHPDevStack phpMyAdmin local sign-on') {
+        Add-Content -LiteralPath $template -Value (@(
+            '', '# PHPDevStack phpMyAdmin local sign-on; this endpoint never accepts LAN clients.',
+            'Alias /_devstack "{{INTERNAL_ROOT}}"',
+            '<Directory "{{INTERNAL_ROOT}}">', '    Options -Indexes', '    AllowOverride None', '    Require local', '</Directory>'
+        ) -join [Environment]::NewLine) -Encoding utf8
+    }
+}
+
 function Initialize-PhpMyAdminStorage {
     param(
         [Parameter(Mandatory)][string]$InstallRoot,
@@ -213,6 +237,7 @@ if ($existingDatabase) {
         throw 'Existing phpMyAdmin configuration is missing. Restore it from the pre-update backup; setup will not reset passwords or database contents.'
     }
     & (Join-Path $PSScriptRoot 'merge-mariadb-template.ps1') -InstallRoot $installFullPath
+    Enable-PhpMyAdminSignon -InstallRoot $installFullPath -PhpMyAdminRoot $phpMyAdminRoot
     Write-Host 'Existing databases, passwords, phpMyAdmin configuration and user settings preserved. Database initialization skipped.'
     Write-ProgressState -Completed 7 -Total 7 -Message 'Update complete; existing data preserved.'
     'ready' | Set-Content -LiteralPath (Join-Path $installFullPath '.devstack-ready') -Encoding ascii
@@ -307,6 +332,7 @@ $storageLines = @(
     "`$cfg['Servers'][`$i]['export_templates'] = 'pma__export_templates';"
 )
 Add-Content -LiteralPath (Join-Path $phpMyAdminRoot 'config.inc.php') -Value ($storageLines -join [Environment]::NewLine) -Encoding utf8
+Enable-PhpMyAdminSignon -InstallRoot $installFullPath -PhpMyAdminRoot $phpMyAdminRoot
 [Array]::Clear([Text.Encoding]::UTF8.GetBytes($rootPassword), 0, [Text.Encoding]::UTF8.GetByteCount($rootPassword))
 $rootPassword = $null
 

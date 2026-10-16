@@ -38,6 +38,7 @@ public sealed class ConfigurationGenerator(StackPaths paths, StackOptions option
             ["WWW_ROOT"] = Normalize(paths.WebRoot),
             ["LOG_ROOT"] = Normalize(paths.LogRoot),
             ["SESSION_ROOT"] = Normalize(paths.SessionRoot),
+            ["INTERNAL_ROOT"] = Normalize(paths.InternalRoot),
             ["PHP_EXTENSIONS"] = phpConfiguration.RenderExtensions(),
             ["PHP_RUNTIME_SETTINGS"] = phpConfiguration.RenderRuntimeSettings(),
             ["OPCACHE_SETTINGS"] = phpConfiguration.RenderOpcache(),

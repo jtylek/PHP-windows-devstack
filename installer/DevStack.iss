@@ -1,5 +1,5 @@
 #define MyAppName "PHP Windows DevStack"
-#define MyAppVersion "1.0.0-rc.3"
+#define MyAppVersion "1.0.0-rc.4"
 #define MyAppPublisher "PHP Windows DevStack"
 #define MyAppExeName "DevStack.ControlPanel.exe"
 
@@ -22,10 +22,10 @@ DisableWelcomePage=no
 SetupLogging=yes
 CloseApplications=no
 UninstallDisplayIcon={app}\{#MyAppExeName}
-VersionInfoVersion=1.0.0.3
+VersionInfoVersion=1.0.0.4
 VersionInfoDescription=PHP Windows DevStack online installer
 VersionInfoProductName=PHP Windows DevStack
-VersionInfoProductVersion=1.0.0.3
+VersionInfoProductVersion=1.0.0.4
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
