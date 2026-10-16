@@ -66,7 +66,7 @@ To validate the expected repository and package layout:
 
 ### Nontechnical Windows installation
 
-Download the [PHP Windows DevStack 1.0 RC4 installer](https://github.com/jtylek/PHP-windows-devstack/releases/download/v1.0.0-rc.4/PHP-Windows-DevStack-Setup-1.0.0-rc.4-win-x64.exe) and run it. The default installation directory is `C:\PHPDevStack`; installing there requires administrator
+Download the [PHP Windows DevStack 1.0 RC5 installer](https://github.com/jtylek/PHP-windows-devstack/releases/download/v1.0.0-rc.5/PHP-Windows-DevStack-Setup-1.0.0-rc.5-win-x64.exe) and run it. The default installation directory is `C:\PHPDevStack`; installing there requires administrator
 rights. It installs a self-contained control panel, downloads checksum-pinned
 Apache, PHP and MariaDB archives, initializes a local MariaDB instance, and
 creates shortcuts automatically.
@@ -112,8 +112,10 @@ Setup labels the operation **Update existing installation**. Before replacing
 files it checks runtime receipts, requires all processes from that folder to be
 stopped, verifies access to your encrypted password, and makes a SHA-256-verified
 full backup at `C:\PHPDevStack-backups\<timestamp-id>`. Allow disk space for a
-second complete copy. An incomplete/unrecognized installation, a missing runtime
-receipt, or a symbolic link/junction stops the update before files are replaced.
+second complete copy. An incomplete/unrecognized installation or a missing runtime
+receipt stops the update before files are replaced. Symbolic links and junctions
+are retained as links; their external targets are not followed into the backup
+and are not changed by setup.
 
 Existing `www`, databases, passwords, ports, PHP/MariaDB settings, phpMyAdmin
 configuration, and Apache/PHP templates are preserved. Missing MariaDB tuning

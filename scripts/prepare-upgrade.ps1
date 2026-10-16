@@ -63,13 +63,12 @@ try {
         }
     }
 
-    # A full stopped-installation snapshot permits restoration of matching binaries,
-    # templates, DPAPI secrets and database files together. Reject links rather than
-    # silently omit external project/database content or traverse outside this root.
+    # A stopped-installation snapshot permits restoration of matching binaries,
+    # templates, DPAPI secrets and database files together. Project trees often
+    # contain Composer links or junctions. Keep links as links: their targets are
+    # not overwritten by setup and should not be followed into unrelated folders.
     $all = @(Get-Item -LiteralPath $root) + @(Get-ChildItem -LiteralPath $root -Recurse -Force)
-    if (@($all | Where-Object { $_.Attributes -band [IO.FileAttributes]::ReparsePoint }).Count -gt 0) {
-        throw 'This installation contains symbolic links or junctions. Make a backup that includes their targets before using a manual update; automatic update has stopped without changing files.'
-    }
+    $links = @($all | Where-Object { $_.Attributes -band [IO.FileAttributes]::ReparsePoint })
     $backup = $root + '-backups\' + [DateTime]::Now.ToString('yyyyMMdd-HHmmss') + '-' + [Guid]::NewGuid().ToString('N').Substring(0,8)
     [IO.Directory]::CreateDirectory($backup) | Out-Null
     $acl = New-Object Security.AccessControl.DirectorySecurity
@@ -80,11 +79,21 @@ try {
         $acl.AddAccessRule($rule)
     }
     Set-Acl -LiteralPath $backup -AclObject $acl
-    foreach ($entry in Get-ChildItem -LiteralPath $root -Force) {
+    $entries = @(Get-ChildItem -LiteralPath $root -Force)
+    $entryNumber = 0
+    foreach ($entry in $entries) {
+        $entryNumber++
+        Write-Output "DEVSTACK-UPGRADE|Backing up $($entry.Name) ($entryNumber of $($entries.Count))"
         Copy-Item -LiteralPath $entry.FullName -Destination $backup -Recurse -Force
     }
     # Verify every copied file, including databases, before allowing setup to overwrite.
-    foreach ($file in $all | Where-Object { -not $_.PSIsContainer }) {
+    $files = @($all | Where-Object { -not $_.PSIsContainer -and -not ($_.Attributes -band [IO.FileAttributes]::ReparsePoint) })
+    $fileNumber = 0
+    foreach ($file in $files) {
+        $fileNumber++
+        if ($fileNumber -eq 1 -or $fileNumber % 100 -eq 0 -or $fileNumber -eq $files.Count) {
+            Write-Output "DEVSTACK-UPGRADE|Verifying backup files ($fileNumber of $($files.Count))"
+        }
         $relative = $file.FullName.Substring($prefix.Length)
         $copy = Join-Path $backup $relative
         if ((Get-FileDigest $file.FullName) -ne (Get-FileDigest $copy)) { throw "Backup verification failed: $relative" }
@@ -93,6 +102,11 @@ try {
         $_.ExecutablePath -and $_.ExecutablePath.StartsWith($prefix, [StringComparison]::OrdinalIgnoreCase)
     })
     if ($running.Count -gt 0) { throw 'A PHPDevStack process started during the backup. Stop it and retry; this backup is not approved for use.' }
+    if ($links.Count -gt 0) {
+        $linkNames = @($links | ForEach-Object { $_.FullName.Substring($prefix.Length) }) -join ', '
+        $report += "Preserved $($links.Count) symbolic link/junction as links: $linkNames"
+        $report += 'Their targets were not followed into the backup and are not changed by this installer.'
+    }
     $report += "Verified full backup: $backup"
     $report += 'Projects, databases, passwords, ports and custom settings will be preserved.'
     $report | Set-Content -LiteralPath $ResultPath

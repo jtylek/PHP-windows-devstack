@@ -1,5 +1,5 @@
 #define MyAppName "PHP Windows DevStack"
-#define MyAppVersion "1.0.0-rc.4"
+#define MyAppVersion "1.0.0-rc.5"
 #define MyAppPublisher "PHP Windows DevStack"
 #define MyAppExeName "DevStack.ControlPanel.exe"
 
@@ -9,6 +9,7 @@ AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}
 DefaultDirName=C:\PHPDevStack
+DisableDirPage=no
 DefaultGroupName=PHP Windows DevStack
 PrivilegesRequired=admin
 ArchitecturesAllowed=x64compatible
@@ -22,10 +23,10 @@ DisableWelcomePage=no
 SetupLogging=yes
 CloseApplications=no
 UninstallDisplayIcon={app}\{#MyAppExeName}
-VersionInfoVersion=1.0.0.4
+VersionInfoVersion=1.0.0.5
 VersionInfoDescription=PHP Windows DevStack online installer
 VersionInfoProductName=PHP Windows DevStack
-VersionInfoProductVersion=1.0.0.4
+VersionInfoProductVersion=1.0.0.5
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
@@ -67,6 +68,18 @@ Type: files; Name: "{app}\setup-progress.txt"
 var
   UpgradeReport: String;
 
+procedure UpgradePreflightLog(const S: String; const Error, FirstLine: Boolean);
+var
+  MessageText: String;
+begin
+  MessageText := Trim(S);
+  if Pos('DEVSTACK-UPGRADE|', MessageText) = 1 then
+  begin
+    WizardForm.StatusLabel.Caption := Copy(MessageText, Length('DEVSTACK-UPGRADE|') + 1, MaxInt);
+    WizardForm.Refresh;
+  end;
+end;
+
 procedure CurPageChanged(CurPageID: Integer);
 begin
   if CurPageID = wpReady then
@@ -92,8 +105,9 @@ begin
   Parameters := '-NoLogo -NoProfile -ExecutionPolicy Bypass -File "' + ExpandConstant('{tmp}\prepare-upgrade.ps1') +
     '" -InstallRoot "' + ExpandConstant('{app}') + '" -ManifestPath "' + ExpandConstant('{tmp}\upgrade-components.json') +
     '" -ResultPath "' + ExpandConstant('{tmp}\upgrade-report.txt') + '"';
-  WizardForm.StatusLabel.Caption := 'Checking installation and making a verified backup. Large projects may take several minutes...';
-  if not Exec(ExpandConstant('{sys}\WindowsPowerShell\v1.0\powershell.exe'), Parameters, '', SW_HIDE, ewWaitUntilTerminated, ExitCode) then
+  WizardForm.StatusLabel.Caption := 'Checking installation before update...';
+  if not ExecAndLogOutput(ExpandConstant('{sys}\WindowsPowerShell\v1.0\powershell.exe'),
+    Parameters, '', SW_HIDE, ewWaitUntilTerminated, ExitCode, @UpgradePreflightLog) then
   begin
     Result := 'Could not run update preflight. No application files have been replaced.';
     exit;

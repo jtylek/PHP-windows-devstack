@@ -53,6 +53,11 @@ try {
     [IO.File]::WriteAllText("$root\data\config\mariadb-settings.json", '{"BufferPoolSizeMb":512}')
     [IO.File]::WriteAllText("$root\www\index.php", '<?php echo "user project preserved";')
     [IO.File]::WriteAllText("$root\www\upgrade-project.txt", 'project sentinel')
+    $junctionTarget = Join-Path $scratch 'linked-project'
+    [IO.Directory]::CreateDirectory($junctionTarget) | Out-Null
+    [IO.File]::WriteAllText((Join-Path $junctionTarget 'external-project.txt'), 'external project sentinel')
+    cmd /c "mklink /J `"$root\www\linked-project`" `"$junctionTarget`"" *> $null
+    if ($LASTEXITCODE -ne 0) { throw 'Could not create test project junction.' }
     Add-Content "$root\phpmyadmin\config.inc.php" '// user phpMyAdmin configuration sentinel'
     $protectedPaths = @('www/index.php', 'www/upgrade-project.txt', 'data/config/ports.json',
         'data/config/mariadb-settings.json', 'data/secrets/mariadb-root-password.dpapi',
@@ -72,6 +77,8 @@ try {
     }
     $report = Get-Content "$root\logs\upgrade-report.txt" -Raw
     if ($report -notmatch 'Verified full backup:' -or ([regex]::Matches($report, 'Does not need updating - skipped')).Count -ne 4) { throw 'Missing backup/skip report.' }
+    if ($report -notmatch 'Preserved 1 symbolic link/junction as links') { throw 'Project junction was not reported.' }
+    if ((Get-Content (Join-Path $junctionTarget 'external-project.txt') -Raw) -ne 'external project sentinel') { throw 'Project junction target was changed.' }
     $template = Get-Content "$root\runtime\templates\mariadb.ini.template" -Raw
     if ($template -notmatch 'innodb_buffer_pool_size=\{\{INNODB_BUFFER_POOL_SIZE\}\}') { throw 'New MariaDB defaults were not merged.' }
     if (-not (Test-Path "$root\runtime\internal\phpmyadmin-signon.php")) { throw 'Local phpMyAdmin sign-on endpoint is missing.' }
