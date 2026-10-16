@@ -4,6 +4,12 @@ public sealed class ConfigurationGenerator(StackPaths paths, StackOptions option
 {
     private readonly PhpConfigurationManager phpConfiguration = new(paths);
 
+    public void GeneratePhpConfiguration()
+    {
+        paths.EnsureMutableDirectories();
+        Render("php.ini.template", "php.ini");
+    }
+
     public void Generate()
     {
         paths.EnsureMutableDirectories();

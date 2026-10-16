@@ -161,7 +161,29 @@ The Apache installer verifies the artifact checksum and expected runtime files.
 As with the other installer, replacement requires `-Force` and preserves the
 previous directory under `runtime/.backup/`.
 
-## Security
+## PHP PowerShell terminal
+
+Click **Open PowerShell** in the control panel. It opens Windows PowerShell in
+`C:\PHPDevStack\runtime\php` (or the equivalent under your chosen install folder).
+The `php` command explicitly uses the bundled executable and
+`runtime\config\generated\php.ini`, regenerated from your PHP settings before
+the window opens. The terminal displays `php --ini` on startup for verification.
+You can change to your project directory and continue using the same PHP:
+
+```powershell
+cd C:\PHPDevStack\www\my-project
+php --ini
+php -m
+php artisan --version
+```
+
+The terminal's PATH and PHPRC apply only to this window and its child processes
+(including Composer); other terminals and Windows environment settings are not
+changed. PowerShell profiles are not loaded, preventing another profile from
+selecting a different PHP. Close and reopen the terminal after changing PHP
+settings. Additional CLI ini files, if needed, belong in `data\config\php-cli.d`.
+
+## Network security
 
 The development services are local-only by default. See
 [`SECURITY.md`](SECURITY.md) and [`docs/architecture.md`](docs/architecture.md)

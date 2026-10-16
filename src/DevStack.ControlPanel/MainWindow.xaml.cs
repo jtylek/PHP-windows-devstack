@@ -130,6 +130,19 @@ public partial class MainWindow : Window
             MessageBoxButton.OK,
             MessageBoxImage.Information);
 
+    private void OpenPowerShell_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            using var process = Process.Start(PhpTerminal.CreateStartInfo(StackPaths.FromApplicationDirectory(), options));
+            AppendLog("Opened PowerShell with bundled PHP and PHPDevStack's generated php.ini.");
+        }
+        catch (Exception exception)
+        {
+            MessageBox.Show(this, exception.Message, "Could not open PowerShell", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
     private void OpenBrowser_Click(object sender, RoutedEventArgs e) =>
         Process.Start(new ProcessStartInfo($"http://127.0.0.1:{options.HttpPort}") { UseShellExecute = true });
 

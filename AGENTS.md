@@ -48,6 +48,12 @@ known workarounds change.
 
 ## PHP and Epesi compatibility
 
+- The control panel's **Open PowerShell** button opens the bundled PHP directory.
+  `PhpTerminal` sets child-process-only PATH/PHPRC/PHP_INI_SCAN_DIR and defines a
+  session-local `php` function with explicit `-c` for the generated ini. Never
+  set machine/user-wide PHPRC: other PHP installations must remain unaffected.
+  Generating terminal settings must not regenerate Apache config or restart services.
+
 - PHP 8.5 built-in extensions include `ctype`, `pdo`, `tokenizer`, and `xml`.
   They do not appear as DLLs and cannot be meaningfully disabled. The extension
   dialog must keep them checked and explain this to users.
