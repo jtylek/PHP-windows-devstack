@@ -90,6 +90,27 @@ known workarounds change.
 
 ## Known installer and runtime gotchas
 
+### In-place updates (RC3)
+
+- Inno `PrepareToInstall` extracts `prepare-upgrade.ps1` and the target manifest
+  into its temp directory, before copying application files. Existing recognized
+  installs must have stopped processes, usable current-user DPAPI credentials,
+  complete runtime receipts, and no reparse points. Unrecognized folders stop.
+- A full, hash-verified stopped-installation backup goes into the sibling
+  `<install>-backups/<timestamp-id>` directory with restricted ACLs. Backup
+  failure blocks installation. There is no automatic rollback or cleanup.
+- Published `www` and templates use `onlyifdoesntexist`; no project overwrite.
+  Apache/PHP templates remain intact (including hand-made HTTPS includes).
+  `merge-mariadb-template.ps1` adds missing tuning keys but preserves existing
+  explicit values. New defaults ship separately under `runtime/template-defaults`.
+- Runtime installer skips complete equal/newer receipts before downloading;
+  lower versions update, MariaDB cross-series updates are blocked. On an existing
+  database setup skips all DB/phpMyAdmin initialization/password changes and
+  retains phpMyAdmin config. Full backup precedes these operations.
+- Distribution runs a Windows PowerShell 5.1 in-place upgrade test with a real
+  database row, custom project/config files, ports, secrets and unchanged receipts.
+  Never publish the RC3 installer unless this test passes.
+
 ### PowerShell and path handling
 
 - The Inno Setup installer invokes **Windows PowerShell 5.1**, not necessarily

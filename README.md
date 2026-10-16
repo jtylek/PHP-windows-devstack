@@ -66,7 +66,7 @@ To validate the expected repository and package layout:
 
 ### Nontechnical Windows installation
 
-Download the [PHP Windows DevStack 1.0 RC2 installer](https://github.com/jtylek/PHP-windows-devstack/releases/download/v1.0.0-rc.2/PHP-Windows-DevStack-Setup-1.0.0-rc.2-win-x64.exe) and run it. The default installation directory is `C:\PHPDevStack`; installing there requires administrator
+Download the [PHP Windows DevStack 1.0 RC3 installer](https://github.com/jtylek/PHP-windows-devstack/releases/download/v1.0.0-rc.3/PHP-Windows-DevStack-Setup-1.0.0-rc.3-win-x64.exe) and run it. The default installation directory is `C:\PHPDevStack`; installing there requires administrator
 rights. It installs a self-contained control panel, downloads checksum-pinned
 Apache, PHP and MariaDB archives, initializes a local MariaDB instance, and
 creates shortcuts automatically.
@@ -100,6 +100,37 @@ changing ports.
 The control panel includes **SMTP Mail Capture** for local application troubleshooting. Start it from the control panel and configure Epesi or another application to use `127.0.0.1`, port `25`, without encryption or authentication. Messages are captured locally in `data\smtp` and can be viewed, exported as `.eml`, or deleted from the capture window. The listener binds only to localhost and does not deliver mail.
 Changes are stored under `data/config` and only require restarting Apache;
 MariaDB is not restarted.
+
+### Updating an existing installation (RC3 and later)
+
+Run the new installer **as the same Windows user** who originally installed
+PHPDevStack and select your existing folder, usually `C:\PHPDevStack`.
+First stop all services and close the control panel and PHP terminals. Do not
+uninstall the old version or delete `www` or `data`.
+
+Setup labels the operation **Update existing installation**. Before replacing
+files it checks runtime receipts, requires all processes from that folder to be
+stopped, verifies access to your encrypted password, and makes a SHA-256-verified
+full backup at `C:\PHPDevStack-backups\<timestamp-id>`. Allow disk space for a
+second complete copy. An incomplete/unrecognized installation, a missing runtime
+receipt, or a symbolic link/junction stops the update before files are replaced.
+
+Existing `www`, databases, passwords, ports, PHP/MariaDB settings, phpMyAdmin
+configuration, and Apache/PHP templates are preserved. Missing MariaDB tuning
+defaults are added to its template; existing explicit values remain unchanged.
+Runtime versions are compared with the installer's pinned supported manifest:
+equal or newer installed versions display **Does not need updating - skipped**.
+This is not a query of arbitrary latest upstream releases. Cross-series MariaDB
+updates are blocked for a separate database migration. See
+`logs\upgrade-report.txt` and `logs\setup-runtime.log` for the results.
+
+If setup fails after replacing files, keep everything stopped. The verified
+backup contains the matching old binaries, templates and data together: rename
+the failed installation folder and copy the complete backup back to the original
+path. Do not restore individual InnoDB files over a running database. Backups
+include private data and are restricted to your Windows account and SYSTEM;
+keep them until you have checked your sites and databases. Automatic rollback
+and backup cleanup are not implemented.
 
 ### Memory usage
 

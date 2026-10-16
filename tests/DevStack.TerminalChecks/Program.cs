@@ -1,6 +1,13 @@
 using System.Text;
 using DevStack.Core;
 
+if (args.Length == 2 && args[0] == "--render")
+{
+    var installedPaths = new StackPaths(Path.GetFullPath(args[1]));
+    new ConfigurationGenerator(installedPaths, new PortSettingsManager(installedPaths).Load()).Generate();
+    return;
+}
+
 // No real runtime or services needed: exercise paths with spaces and apostrophes,
 // missing runtimes, regenerated ini, and preservation of process/global state.
 var root = Path.Combine(Path.GetTempPath(), "DevStack terminal's checks " + Guid.NewGuid().ToString("N"));

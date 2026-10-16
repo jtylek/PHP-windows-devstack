@@ -52,6 +52,26 @@ foreach ($item in $selected) {
         throw "Unsafe target path for '$($item.name)'."
     }
 
+    $receiptPath = Join-Path $targetFullPath '.devstack-receipt.json'
+    if (Test-Path -LiteralPath $receiptPath) {
+        $installedReceipt = Get-Content -LiteralPath $receiptPath -Raw | ConvertFrom-Json
+        $complete = $true
+        foreach ($required in $item.requiredFiles) {
+            if (-not (Test-Path -LiteralPath (Join-Path $targetFullPath $required) -PathType Leaf)) { $complete = $false }
+        }
+        if ($complete -and [version]$installedReceipt.version -ge [version]$item.version) {
+            Write-Host "$($item.displayName) $($installedReceipt.version) does not need updating (supported: $($item.version)); skipped."
+            continue
+        }
+        if ($item.name -eq 'mariadb') {
+            $oldVersion = [version]$installedReceipt.version
+            $newVersion = [version]$item.version
+            if ($oldVersion.Major -ne $newVersion.Major -or $oldVersion.Minor -ne $newVersion.Minor) {
+                throw 'Cross-series MariaDB updates require a separate database migration.'
+            }
+        }
+    }
+
     if ((Test-Path -LiteralPath $targetFullPath) -and -not $Force) {
         throw "Runtime '$($item.name)' already exists at '$targetFullPath'. Use -Force to replace it safely."
     }
@@ -60,7 +80,8 @@ foreach ($item in $selected) {
         continue
     }
 
-    $temporaryRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("devstack-" + [Guid]::NewGuid().ToString('N'))
+    # Stage on the destination volume so Directory.Move also works on D:, E:, etc.
+    $temporaryRoot = Join-Path $destinationFullPath (".download-" + [Guid]::NewGuid().ToString('N'))
     $archivePath = Join-Path $temporaryRoot "$($item.name).zip"
     $extractPath = Join-Path $temporaryRoot 'extract'
     $stagingPath = $null
@@ -134,6 +155,10 @@ foreach ($item in $selected) {
             if (-not (Test-Path -LiteralPath $candidate -PathType Leaf)) {
                 throw "Archive '$($item.name)' is missing required file '$relativePath'."
             }
+        }
+
+        if ($item.name -eq 'phpmyadmin' -and (Test-Path -LiteralPath (Join-Path $targetFullPath 'config.inc.php'))) {
+            Copy-Item -LiteralPath (Join-Path $targetFullPath 'config.inc.php') -Destination (Join-Path $payloadRoot 'config.inc.php')
         }
 
         $stagingPath = Join-Path $destinationFullPath (".staging-$($item.name)-" + [Guid]::NewGuid().ToString('N'))

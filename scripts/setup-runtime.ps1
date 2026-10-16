@@ -151,6 +151,7 @@ function Initialize-PhpMyAdminStorage {
 $runtimeRoot = Join-Path $installFullPath 'runtime'
 $manifestPath = Join-Path $runtimeRoot 'manifest/components.json'
 $installer = Join-Path $PSScriptRoot 'install-runtime.ps1'
+$existingDatabase = Test-Path -LiteralPath (Join-Path $installFullPath 'data/mariadb/mysql') -PathType Container
 Write-ProgressState -Completed 0 -Total 7 -Message 'Preparing runtime downloads...'
 
 function Remove-OptionalRuntimeFiles {
@@ -207,6 +208,17 @@ Write-ProgressState -Completed 3 -Total 7 -Message 'Downloading and verifying ph
 Write-ProgressState -Completed 4 -Total 7 -Message 'phpMyAdmin is ready.'
 
 $phpMyAdminRoot = Join-Path $installFullPath 'phpmyadmin'
+if ($existingDatabase) {
+    if (-not (Test-Path -LiteralPath (Join-Path $phpMyAdminRoot 'config.inc.php'))) {
+        throw 'Existing phpMyAdmin configuration is missing. Restore it from the pre-update backup; setup will not reset passwords or database contents.'
+    }
+    & (Join-Path $PSScriptRoot 'merge-mariadb-template.ps1') -InstallRoot $installFullPath
+    Write-Host 'Existing databases, passwords, phpMyAdmin configuration and user settings preserved. Database initialization skipped.'
+    Write-ProgressState -Completed 7 -Total 7 -Message 'Update complete; existing data preserved.'
+    'ready' | Set-Content -LiteralPath (Join-Path $installFullPath '.devstack-ready') -Encoding ascii
+    Write-Host 'DevStack runtime setup completed.'
+    return
+}
 $secretBytes = New-Object byte[] 32
 $secretRandom = [Security.Cryptography.RandomNumberGenerator]::Create()
 try {

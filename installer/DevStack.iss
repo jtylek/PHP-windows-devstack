@@ -1,5 +1,5 @@
 #define MyAppName "PHP Windows DevStack"
-#define MyAppVersion "1.0.0-rc.2"
+#define MyAppVersion "1.0.0-rc.3"
 #define MyAppPublisher "PHP Windows DevStack"
 #define MyAppExeName "DevStack.ControlPanel.exe"
 
@@ -20,11 +20,12 @@ SolidCompression=yes
 WizardStyle=modern
 DisableWelcomePage=no
 SetupLogging=yes
+CloseApplications=no
 UninstallDisplayIcon={app}\{#MyAppExeName}
-VersionInfoVersion=1.0.0.2
+VersionInfoVersion=1.0.0.3
 VersionInfoDescription=PHP Windows DevStack online installer
 VersionInfoProductName=PHP Windows DevStack
-VersionInfoProductVersion=1.0.0.2
+VersionInfoProductVersion=1.0.0.3
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
@@ -33,7 +34,13 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "Create a desktop shortcut"; GroupDescription: "Additional shortcuts:"
 
 [Files]
-Source: "..\artifacts\publish\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\artifacts\publish\*"; DestDir: "{app}"; Excludes: "www\*,runtime\templates\*"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\artifacts\publish\www\*"; DestDir: "{app}\www"; Flags: onlyifdoesntexist uninsneveruninstall recursesubdirs createallsubdirs
+Source: "..\artifacts\publish\runtime\templates\*"; DestDir: "{app}\runtime\templates"; Flags: onlyifdoesntexist uninsneveruninstall recursesubdirs createallsubdirs
+Source: "..\runtime\templates\mariadb.ini.template"; DestDir: "{app}\runtime\template-defaults"; Flags: ignoreversion
+Source: "..\scripts\prepare-upgrade.ps1"; Flags: dontcopy
+Source: "..\runtime\manifest\components.json"; DestName: "upgrade-components.json"; Flags: dontcopy
+Source: "..\scripts\merge-mariadb-template.ps1"; DestDir: "{app}\scripts"; Flags: ignoreversion
 Source: "..\scripts\install-runtime.ps1"; DestDir: "{app}\scripts"; Flags: ignoreversion
 Source: "..\scripts\verify-runtime-manifest.ps1"; DestDir: "{app}\scripts"; Flags: ignoreversion
 Source: "..\scripts\setup-runtime.ps1"; DestDir: "{app}\scripts"; Flags: ignoreversion
@@ -57,6 +64,50 @@ Type: files; Name: "{app}\.devstack-ready"
 Type: files; Name: "{app}\setup-progress.txt"
 
 [Code]
+var
+  UpgradeReport: String;
+
+procedure CurPageChanged(CurPageID: Integer);
+begin
+  if CurPageID = wpReady then
+  begin
+    if FileExists(ExpandConstant('{app}\DevStack.ControlPanel.exe')) then
+      WizardForm.ReadyMemo.Lines.Insert(0, 'UPDATE EXISTING INSTALLATION - a verified full backup is required before replacing files.')
+    else if DirExists(ExpandConstant('{app}')) then
+      WizardForm.ReadyMemo.Lines.Insert(0, 'EXISTING FOLDER - setup will verify it before making changes.')
+    else
+      WizardForm.ReadyMemo.Lines.Insert(0, 'FRESH INSTALLATION');
+  end;
+end;
+
+function PrepareToInstall(var NeedsRestart: Boolean): String;
+var
+  ExitCode: Integer;
+  Parameters: String;
+  ReportText: AnsiString;
+begin
+  Result := '';
+  ExtractTemporaryFile('prepare-upgrade.ps1');
+  ExtractTemporaryFile('upgrade-components.json');
+  Parameters := '-NoLogo -NoProfile -ExecutionPolicy Bypass -File "' + ExpandConstant('{tmp}\prepare-upgrade.ps1') +
+    '" -InstallRoot "' + ExpandConstant('{app}') + '" -ManifestPath "' + ExpandConstant('{tmp}\upgrade-components.json') +
+    '" -ResultPath "' + ExpandConstant('{tmp}\upgrade-report.txt') + '"';
+  WizardForm.StatusLabel.Caption := 'Checking installation and making a verified backup. Large projects may take several minutes...';
+  if not Exec(ExpandConstant('{sys}\WindowsPowerShell\v1.0\powershell.exe'), Parameters, '', SW_HIDE, ewWaitUntilTerminated, ExitCode) then
+  begin
+    Result := 'Could not run update preflight. No application files have been replaced.';
+    exit;
+  end;
+  if LoadStringFromFile(ExpandConstant('{tmp}\upgrade-report.txt'), ReportText) then
+    UpgradeReport := String(ReportText)
+  else
+    UpgradeReport := 'Update preflight did not produce a report.';
+  if ExitCode <> 0 then
+    Result := UpgradeReport
+  else if not WizardSilent then
+    MsgBox(UpgradeReport, mbInformation, MB_OK);
+end;
+
 procedure InitializeWizard;
 begin
   WizardForm.WelcomeLabel2.Caption :=
@@ -124,6 +175,8 @@ procedure CurStepChanged(CurStep: TSetupStep);
 begin
   if CurStep = ssPostInstall then
   begin
+    ForceDirectories(ExpandConstant('{app}\logs'));
+    SaveStringToFile(ExpandConstant('{app}\logs\upgrade-report.txt'), UpgradeReport, False);
     RunRuntimeSetup;
     VerifyRuntimeSetup;
   end;
