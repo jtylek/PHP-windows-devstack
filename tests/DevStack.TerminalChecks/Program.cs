@@ -32,6 +32,11 @@ try
     File.WriteAllText(apacheConfig, "preserve running Apache config");
     var start = PhpTerminal.CreateStartInfo(paths, new StackOptions());
     void Check(bool condition, string message) { if (!condition) throw new Exception(message); }
+    using (var attachedProcess = new ManagedProcess("test process", Environment.ProcessPath
+        ?? throw new Exception("Current process path is unavailable.")))
+        Check(attachedProcess.IsRunning, "A newly opened controller must attach to an already running matching process.");
+    using (var unmatchedProcess = new ManagedProcess("unmatched process", Path.Combine(root, "not-running.exe")))
+        Check(!unmatchedProcess.IsRunning, "Process detection must ignore executables outside the configured path.");
     var ini = Path.Combine(paths.GeneratedConfigRoot, "php.ini");
     Check(start.WorkingDirectory == paths.PhpRoot, "Wrong starting directory.");
     Check(!start.UseShellExecute && !start.CreateNoWindow, "Terminal must have its own visible console.");

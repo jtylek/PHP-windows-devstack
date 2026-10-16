@@ -1,8 +1,10 @@
 using System.Diagnostics;
 using System.IO;
 using System.Text.Json;
+using System.ComponentModel;
 using System.Windows;
 using System.Windows.Media;
+using Forms = System.Windows.Forms;
 using DevStack.Core;
 
 namespace DevStack.ControlPanel;
@@ -18,10 +20,14 @@ public partial class MainWindow : Window
     private readonly PhpConfigurationManager phpConfiguration;
     private readonly SmtpCaptureService smtpCapture;
     private SmtpCaptureWindow? smtpCaptureWindow;
+    private readonly Forms.NotifyIcon trayIcon;
+    private bool allowClose;
 
     public MainWindow()
     {
         InitializeComponent();
+        Closing += MainWindow_Closing;
+        trayIcon = CreateTrayIcon();
         var paths = StackPaths.FromApplicationDirectory();
         portSettings = new PortSettingsManager(paths);
         options = portSettings.Load();
@@ -34,6 +40,54 @@ public partial class MainWindow : Window
         controller.OutputReceived += (_, line) => Dispatcher.Invoke(() => AppendLog(line));
         controller.StatusChanged += (_, _) => Dispatcher.Invoke(UpdateStatus);
         VersionSummary.Text = LoadVersionSummary(paths);
+        UpdateStatus();
+        if (controller.IsApacheRunning)
+            AppendLog("Detected an existing Apache process from this DevStack installation.");
+        if (controller.IsMariaDbRunning)
+            AppendLog("Detected an existing MariaDB process from this DevStack installation.");
+    }
+
+    private Forms.NotifyIcon CreateTrayIcon()
+    {
+        var menu = new Forms.ContextMenuStrip();
+        menu.Items.Add("Open PHP Windows DevStack", null, (_, _) => RestoreFromTray());
+        menu.Items.Add(new Forms.ToolStripSeparator());
+        menu.Items.Add("Quit and stop services", null, (_, _) => Quit_Click(this, new RoutedEventArgs()));
+        var icon = new Forms.NotifyIcon
+        {
+            Icon = System.Drawing.SystemIcons.Application,
+            Text = "PHP Windows DevStack",
+            ContextMenuStrip = menu,
+            Visible = false
+        };
+        icon.DoubleClick += (_, _) => RestoreFromTray();
+        return icon;
+    }
+
+    private void MainWindow_Closing(object? sender, CancelEventArgs e)
+    {
+        if (allowClose)
+        {
+            return;
+        }
+
+        e.Cancel = true;
+        trayIcon.Visible = true;
+        Hide();
+        trayIcon.BalloonTipTitle = "PHP Windows DevStack is still running";
+        trayIcon.BalloonTipText = "Apache and MariaDB keep running. Choose 'Quit and stop services' in the tray menu to stop them and exit.";
+        trayIcon.ShowBalloonTip(4000);
+    }
+
+    private void RestoreFromTray()
+    {
+        trayIcon.Visible = false;
+        Show();
+        if (WindowState == WindowState.Minimized)
+        {
+            WindowState = WindowState.Normal;
+        }
+        Activate();
         UpdateStatus();
     }
 
@@ -110,10 +164,17 @@ public partial class MainWindow : Window
                 await controller.StopAllAsync();
             }
 
+            allowClose = true;
             Close();
+        }
+        catch (Exception exception)
+        {
+            AppendLog($"Quit failed: {exception.Message}");
+            MessageBox.Show(this, exception.Message, "Could not stop DevStack", MessageBoxButton.OK, MessageBoxImage.Error);
         }
         finally
         {
+            UpdateStatus();
             QuitButton.IsEnabled = true;
         }
     }
@@ -471,6 +532,8 @@ public partial class MainWindow : Window
     {
         smtpCaptureWindow?.Close();
         smtpCapture.StopAsync().GetAwaiter().GetResult();
+        trayIcon.Visible = false;
+        trayIcon.Dispose();
         controller.Dispose();
         base.OnClosed(e);
     }

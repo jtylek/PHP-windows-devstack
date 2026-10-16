@@ -66,7 +66,7 @@ To validate the expected repository and package layout:
 
 ### Nontechnical Windows installation
 
-Download the [PHP Windows DevStack 1.0 RC10 installer](https://github.com/jtylek/PHP-windows-devstack/releases/download/v1.0.0-rc.10/PHP-Windows-DevStack-Setup-1.0.0-rc.10-win-x64.exe) and run it. The default installation directory is `C:\PHPDevStack`; installing there requires administrator
+Download the [PHP Windows DevStack 1.0 RC11 installer](https://github.com/jtylek/PHP-windows-devstack/releases/download/v1.0.0-rc.11/PHP-Windows-DevStack-Setup-1.0.0-rc.11-win-x64.exe) and run it. The default installation directory is `C:\PHPDevStack`; installing there requires administrator
 rights. It installs a self-contained control panel, downloads checksum-pinned
 Apache, PHP and MariaDB archives, initializes a local MariaDB instance, and
 creates shortcuts automatically.
@@ -94,6 +94,14 @@ The control panel also provides **PHP extensions**, **OPcache settings**, and
 can be changed to common ports such as `80` and `3306`. DevStack checks that a
 new port is available before saving it, and the services must be stopped before
 changing ports.
+
+Clicking the Control Panel's **X** button hides it in the Windows notification
+area and leaves its services running. Choose **Open PHP Windows DevStack** to
+show it again, or **Quit and stop services** from the tray menu to stop Apache,
+MariaDB and SMTP capture before exiting. If the panel is closed unexpectedly,
+the next launch detects Apache and MariaDB processes by their executable paths
+and reconnects its status and stop controls to this installation. A different
+program using the same port is not treated as a DevStack service.
 
 ### SMTP mail capture
 

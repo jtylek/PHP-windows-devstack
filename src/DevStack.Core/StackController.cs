@@ -4,13 +4,15 @@ public sealed class StackController : IDisposable
 {
     private readonly StackPaths paths;
     private readonly StackOptions options;
-    private readonly ManagedProcess apache = new("Apache");
-    private readonly ManagedProcess mariaDb = new("MariaDB");
+    private readonly ManagedProcess apache;
+    private readonly ManagedProcess mariaDb;
 
     public StackController(StackPaths paths, StackOptions options)
     {
         this.paths = paths;
         this.options = options;
+        apache = new ManagedProcess("Apache", Path.Combine(paths.ApacheRoot, "bin", "httpd.exe"));
+        mariaDb = new ManagedProcess("MariaDB", Path.Combine(paths.MariaDbRoot, "bin", "mariadbd.exe"));
         apache.OutputReceived += ForwardOutput;
         mariaDb.OutputReceived += ForwardOutput;
         apache.Exited += (_, _) => StatusChanged?.Invoke(this, EventArgs.Empty);

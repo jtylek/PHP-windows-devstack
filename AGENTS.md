@@ -169,6 +169,17 @@ known workarounds change.
 - The capture window is modeless. Closing the main control panel must close the
   capture window and stop the listener.
 
+### Control Panel lifetime and service detection
+
+- Clicking the main window's **X** hides the Control Panel to the notification
+  area; Apache and MariaDB continue running. The tray menu restores the panel or
+  chooses **Quit and stop services**, which stops Apache, MariaDB, and SMTP
+  capture before closing.
+- On launch, `StackController` reconnects to Apache and MariaDB processes only
+  when their executable paths match this installation's bundled binaries. A
+  different program occupying a configured port remains a port conflict and is
+  not reported as a running DevStack service.
+
 ### Runtime trimming
 
 - `scripts/trim-runtime.ps1` removes development/debug payloads, and the online
