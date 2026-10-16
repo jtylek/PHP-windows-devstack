@@ -227,6 +227,7 @@ try {
         Assert-NotCancelled
         $planNumber++
         $item = $record.Item
+        $destination = Join-Path $backup $record.Relative
         if ($record.Reuse) {
             if ($planNumber -eq 1 -or $planNumber % 500 -eq 0 -or $planNumber -eq $copyPlan.Count) {
                 Write-Output "DEVSTACK-UPGRADE|Keeping unchanged backup file ($planNumber of $($copyPlan.Count)): $($item.FullName)"
