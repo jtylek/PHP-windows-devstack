@@ -42,7 +42,9 @@
         "php.exe",
         "php8apache2_4.dll",
         "ext/php_mysqli.dll",
-        "ext/php_pdo_mysql.dll"
+        "ext/php_pdo_mysql.dll",
+        "ext/php_pdo_sqlite.dll",
+        "ext/php_sqlite3.dll"
       ],
       "status": "ready"
     },
