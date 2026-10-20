@@ -125,8 +125,8 @@ openssl.cafile="$customCaPath"
     foreach ($setting in @("curl.cainfo=`"$customCaPath`"", "openssl.cafile=`"$customCaPath`"")) {
         if (-not $phpIni.Contains($setting)) { throw "Custom CA setting was not preserved: $setting" }
     }
-    if ([regex]::Matches($phpIni, '(?m)^curl\\.cainfo=').Count -ne 1 -or
-        [regex]::Matches($phpIni, '(?m)^openssl\\.cafile=').Count -ne 1) {
+    if ([regex]::Matches($phpIni, '(?m)^curl\.cainfo=').Count -ne 1 -or
+        [regex]::Matches($phpIni, '(?m)^openssl\.cafile=').Count -ne 1) {
         throw 'Generated PHP configuration contains duplicate CA settings.'
     }
     $serverIni = "$root\runtime\config\generated\mariadb.ini"
