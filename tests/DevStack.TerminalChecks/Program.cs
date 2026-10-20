@@ -78,7 +78,36 @@ try
         catch (ArgumentOutOfRangeException) { }
     }
     mariaDbSettings.Save(new MariaDbSettings(1024));
+    Directory.CreateDirectory(Path.Combine(paths.PhpRoot, "ext"));
+    File.WriteAllText(Path.Combine(paths.PhpRoot, "ext", "php_pdo_sqlite.dll"), string.Empty);
+    File.WriteAllText(Path.Combine(paths.PhpRoot, "ext", "php_sqlite3.dll"), string.Empty);
     new ConfigurationGenerator(paths, new StackOptions(8088, 3311)).Generate();
+    var phpTemplatePath = Path.Combine(paths.TemplateRoot, "php.ini.template");
+    var phpIniPath = Path.Combine(paths.GeneratedConfigRoot, "php.ini");
+    var phpIni = File.ReadAllText(phpIniPath);
+    var caPath = paths.CaBundlePath.Replace('\\', '/');
+    Check(phpIni.Contains($"curl.cainfo=\\"{caPath}\\""), "PHP cURL must use the bundled CA certificate file.");
+    Check(phpIni.Contains($"openssl.cafile=\\"{caPath}\\""), "PHP OpenSSL must use the bundled CA certificate file.");
+    Check(phpIni.Split("curl.cainfo=", StringSplitOptions.None).Length == 2, "Generated PHP ini must contain one curl.cainfo setting.");
+    Check(phpIni.Split("openssl.cafile=", StringSplitOptions.None).Length == 2, "Generated PHP ini must contain one openssl.cafile setting.");
+    Check(phpIni.Contains("extension=pdo_sqlite") && phpIni.Contains("extension=sqlite3"), "SQLite extensions should be enabled when their DLLs are available.");
+
+    var defaultTemplate = File.ReadAllText(phpTemplatePath);
+    File.AppendAllText(phpTemplatePath, Environment.NewLine + "curl.cainfo=\\"C:/custom CA/cacert.pem\\""
+        + Environment.NewLine + "openssl.cafile=\\"D:/custom CA/roots.pem\\"");
+    new ConfigurationGenerator(paths, new StackOptions(8088, 3311)).Generate();
+    phpIni = File.ReadAllText(phpIniPath);
+    Check(phpIni.Contains("curl.cainfo=\\"C:/custom CA/cacert.pem\\""), "A custom cURL CA path must be preserved.");
+    Check(phpIni.Contains("openssl.cafile=\\"D:/custom CA/roots.pem\\""), "A custom OpenSSL CA path must be preserved.");
+    Check(phpIni.Split("curl.cainfo=", StringSplitOptions.None).Length == 2, "Custom PHP ini must not contain duplicate curl.cainfo settings.");
+    Check(phpIni.Split("openssl.cafile=", StringSplitOptions.None).Length == 2, "Custom PHP ini must not contain duplicate openssl.cafile settings.");
+
+    File.WriteAllText(phpTemplatePath, defaultTemplate);
+    new ConfigurationGenerator(paths, new StackOptions(8088, 3311)).Generate();
+    phpIni = File.ReadAllText(phpIniPath);
+    Check(phpIni.Contains("curl.cainfo=\\"C:/custom CA/cacert.pem\\""), "An explicit CA setting in the generated ini must survive regeneration.");
+    Check(phpIni.Contains("openssl.cafile=\\"D:/custom CA/roots.pem\\""), "An explicit OpenSSL CA setting in the generated ini must survive regeneration.");
+
     var databaseIni = File.ReadAllText(Path.Combine(paths.GeneratedConfigRoot, "mariadb.ini"));
     var serverSection = databaseIni.Split("[client]", StringSplitOptions.None)[0];
     foreach (var setting in new[] { "innodb_buffer_pool_size=1G", "innodb_flush_log_at_trx_commit=2",
