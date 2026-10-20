@@ -46,6 +46,7 @@ Source: "..\scripts\merge-mariadb-template.ps1"; DestDir: "{app}\scripts"; Flags
 Source: "..\scripts\install-runtime.ps1"; DestDir: "{app}\scripts"; Flags: ignoreversion
 Source: "..\scripts\verify-runtime-manifest.ps1"; DestDir: "{app}\scripts"; Flags: ignoreversion
 Source: "..\scripts\setup-runtime.ps1"; DestDir: "{app}\scripts"; Flags: ignoreversion
+Source: "..\scripts\refresh-ca-bundle.ps1"; DestDir: "{app}\scripts"; Flags: ignoreversion
 Source: "..\scripts\trim-runtime.ps1"; DestDir: "{app}\scripts"; Flags: ignoreversion
 Source: "..\scripts\show-database-password.ps1"; DestDir: "{app}\scripts"; Flags: ignoreversion
 Source: "..\LICENSE"; DestDir: "{app}"; Flags: ignoreversion
@@ -62,6 +63,7 @@ Filename: "{app}\{#MyAppExeName}"; Description: "Launch PHP Windows DevStack"; F
 Type: filesandordirs; Name: "{app}\runtime\apache"
 Type: filesandordirs; Name: "{app}\runtime\php"
 Type: filesandordirs; Name: "{app}\runtime\mariadb"
+Type: filesandordirs; Name: "{app}\runtime\certificates"
 Type: files; Name: "{app}\.devstack-ready"
 Type: files; Name: "{app}\setup-progress.txt"
 
