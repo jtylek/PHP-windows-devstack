@@ -76,6 +76,11 @@ Alias /_devstack "{{INTERNAL_ROOT}}"
 '@ -Encoding utf8
     [IO.Directory]::CreateDirectory("$root\runtime\internal") | Out-Null
     [IO.File]::WriteAllText("$root\runtime\internal\phpmyadmin-signon.php", 'legacy endpoint')
+    $customCaPath = "$($root.Replace('\', '/'))/data/ssl/cacert.pem"
+    Add-Content -LiteralPath "$root\runtime\templates\php.ini.template" -Value @"
+curl.cainfo="$customCaPath"
+openssl.cafile="$customCaPath"
+"@ -Encoding utf8
     $protectedPaths = @('www/index.php', 'www/upgrade-project.txt', 'data/config/ports.json',
         'data/config/mariadb-settings.json', 'data/secrets/mariadb-root-password.dpapi',
         'runtime/templates/php.ini.template',
@@ -116,6 +121,14 @@ Alias /_devstack "{{INTERNAL_ROOT}}"
     # Exercise the actual generated configuration and slow log, not just template text.
     dotnet run --project (Join-Path (Split-Path -Parent $PSScriptRoot) 'tests/DevStack.TerminalChecks/DevStack.TerminalChecks.csproj') -- --render $root
     if ($LASTEXITCODE -ne 0) { throw 'Could not render installed configuration.' }
+    $phpIni = Get-Content "$root\runtime\config\generated\php.ini" -Raw
+    foreach ($setting in @("curl.cainfo=`"$customCaPath`"", "openssl.cafile=`"$customCaPath`"")) {
+        if (-not $phpIni.Contains($setting)) { throw "Custom CA setting was not preserved: $setting" }
+    }
+    if ([regex]::Matches($phpIni, '(?m)^curl\\.cainfo=').Count -ne 1 -or
+        [regex]::Matches($phpIni, '(?m)^openssl\\.cafile=').Count -ne 1) {
+        throw 'Generated PHP configuration contains duplicate CA settings.'
+    }
     $serverIni = "$root\runtime\config\generated\mariadb.ini"
     & "$root\runtime\mariadb\bin\mariadbd.exe" "--defaults-file=$serverIni" --verbose --help *> (Join-Path $scratch 'mariadb-options.txt')
     if ($LASTEXITCODE -ne 0) { Get-Content (Join-Path $scratch 'mariadb-options.txt'); throw 'MariaDB rejected generated options.' }
