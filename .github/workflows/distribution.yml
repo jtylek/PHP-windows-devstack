@@ -134,7 +134,7 @@ jobs:
           $stream = @file_get_contents('https://curl.se/');
           echo 'openssl=', $stream === false ? 'failed' : 'ok', PHP_EOL;
           '@ | Set-Content -LiteralPath $probe -Encoding ascii
-          $probeOutput = & "$testRoot\runtime\php\php.exe" -c "$testRoot\runtime\config\generated\php.ini" $probe 2>&1
+          $probeOutput = (& "$testRoot\runtime\php\php.exe" -c "$testRoot\runtime\config\generated\php.ini" $probe 2>&1 | Out-String)
           if ($LASTEXITCODE -ne 0 -or $probeOutput -notmatch 'curl=0' -or $probeOutput -notmatch 'openssl=ok') {
             $probeOutput
             throw 'PHP CLI could not validate HTTPS with the bundled CA certificate file.'
