@@ -104,6 +104,7 @@ jobs:
             'runtime/apache/bin/httpd.exe',
             'runtime/php/php.exe',
             'runtime/mariadb/bin/mariadbd.exe',
+            'runtime/certificates/cacert.pem',
             'data/mariadb/mysql',
             '.devstack-ready'
           )) {
@@ -112,6 +113,56 @@ jobs:
               Get-Content "$testRoot\logs\setup-runtime.log" -ErrorAction SilentlyContinue
               throw "Installed path is missing: $path"
             }
+          }
+
+          dotnet run --project tests/DevStack.TerminalChecks/DevStack.TerminalChecks.csproj -- --render $testRoot
+          if ($LASTEXITCODE -ne 0) { throw 'Could not render the fresh installation PHP configuration.' }
+          $phpIni = Get-Content "$testRoot\runtime\config\generated\php.ini" -Raw
+          $bundlePath = "$testRoot\runtime\certificates\cacert.pem".Replace('\', '/')
+          if ($phpIni -notmatch [regex]::Escape("curl.cainfo=`"$bundlePath`"") -or
+              $phpIni -notmatch [regex]::Escape("openssl.cafile=`"$bundlePath`"")) {
+            throw 'Generated PHP configuration does not point cURL and OpenSSL at the bundled CA file.'
+          }
+          $probe = Join-Path $env:RUNNER_TEMP 'php-ca-probe.php'
+          @'
+          <?php
+          $curl = curl_init('https://curl.se/');
+          curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+          curl_setopt($curl, CURLOPT_TIMEOUT, 20);
+          curl_exec($curl);
+          echo 'curl=', curl_errno($curl), PHP_EOL;
+          $stream = @file_get_contents('https://curl.se/');
+          echo 'openssl=', $stream === false ? 'failed' : 'ok', PHP_EOL;
+          '@ | Set-Content -LiteralPath $probe -Encoding ascii
+          $probeOutput = & "$testRoot\runtime\php\php.exe" -c "$testRoot\runtime\config\generated\php.ini" $probe 2>&1
+          if ($LASTEXITCODE -ne 0 -or $probeOutput -notmatch 'curl=0' -or $probeOutput -notmatch 'openssl=ok') {
+            $probeOutput
+            throw 'PHP CLI could not validate HTTPS with the bundled CA certificate file.'
+          }
+
+          $webProbe = Join-Path $testRoot 'www\ca-probe.php'
+          Copy-Item -LiteralPath $probe -Destination $webProbe
+          $httpd = $null
+          try {
+            $httpd = Start-Process -FilePath "$testRoot\runtime\apache\bin\httpd.exe" -ArgumentList @('-f', "$testRoot\runtime\config\generated\httpd.conf") -WorkingDirectory "$testRoot\runtime\apache" -PassThru -WindowStyle Hidden
+            $response = $null
+            for ($attempt = 0; $attempt -lt 20 -and $null -eq $response; $attempt++) {
+              try { $response = Invoke-WebRequest -Uri 'http://127.0.0.1:8080/ca-probe.php' -TimeoutSec 5 }
+              catch {
+                if ($httpd.HasExited) { throw "Apache exited before the PHP HTTPS probe completed. $($_.Exception.Message)" }
+                Start-Sleep -Seconds 1
+              }
+            }
+            if ($null -eq $response -or $response.Content -notmatch 'curl=0' -or $response.Content -notmatch 'openssl=ok') {
+              throw "PHP served by Apache could not validate HTTPS with the bundled CA file. Response: $($response.Content)"
+            }
+          }
+          finally {
+            if ($null -ne $httpd -and -not $httpd.HasExited) {
+              Stop-Process -Id $httpd.Id -Force
+              $httpd.WaitForExit(10000) | Out-Null
+            }
+            Remove-Item -LiteralPath $webProbe -Force -ErrorAction SilentlyContinue
           }
 
       - name: Verify in-place update preserves existing data
