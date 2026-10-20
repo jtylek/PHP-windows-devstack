@@ -120,11 +120,7 @@ public sealed class ConfigurationGenerator(StackPaths paths, StackOptions option
 
     private static string RenderCaSettings(IReadOnlyDictionary<string, string> overrides, string caBundlePath)
     {
-        var bundlePath = Normalize(Path.Combine(
-            Path.GetDirectoryName(Path.GetDirectoryName(Path.GetDirectoryName(AppContext.BaseDirectory)) ?? AppContext.BaseDirectory) ?? AppContext.BaseDirectory,
-            "runtime", "certificates", "cacert.pem"));
-        // StackPaths.Root is installation-relative; callers replace this fallback
-        // below using the actual managed bundle path in their generated value.
+        var bundlePath = Normalize(caBundlePath);
         var curl = overrides.TryGetValue("curl.cainfo", out var curlOverride)
             ? curlOverride
             : $"\\"{bundlePath}\\"";
