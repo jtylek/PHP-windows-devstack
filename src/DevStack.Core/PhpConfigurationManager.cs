@@ -22,7 +22,7 @@ public sealed class PhpConfigurationManager
 {
     private static readonly string[] KnownExtensions =
     [
-        "ctype", "curl", "fileinfo", "gd", "intl", "mbstring", "mysqli", "openssl", "pdo_mysql", "sodium", "xml", "zip"
+        "ctype", "curl", "fileinfo", "gd", "intl", "mbstring", "mysqli", "openssl", "pdo_mysql", "pdo_sqlite", "sodium", "sqlite3", "xml", "zip"
     ];
 
     // PHP 8.5 ships these extensions in the core binary instead of as DLLs
