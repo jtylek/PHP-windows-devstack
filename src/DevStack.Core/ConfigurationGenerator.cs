@@ -95,25 +95,10 @@ public sealed class ConfigurationGenerator(StackPaths paths, StackOptions option
             var normalizedManagedPath = Normalize(managedBundlePath);
             var isManagedBundle = unquoted.Equals(normalizedManagedPath, StringComparison.OrdinalIgnoreCase) ||
                 unquoted.EndsWith("/runtime/certificates/cacert.pem", StringComparison.OrdinalIgnoreCase);
-            if (isManagedBundle)
+            if (!isManagedBundle)
             {
-                continue;
-            }
-
-            var lineStart = iniContents.LastIndexOf('\n', match.Index);
-            var previousLineStart = lineStart > 0 ? iniContents.LastIndexOf('\n', lineStart - 1) : -1;
-            var previousLine = lineStart >= 0
-                ? iniContents[(previousLineStart + 1)..lineStart].Trim()
-                : string.Empty;
-            if (previousLine.Equals(ManagedCaSettingComment, StringComparison.Ordinal))
-            {
-                // An edited generated value differs from the managed path and
-                // is therefore treated as a user override; an unchanged value is above.
                 settings[match.Groups["name"].Value] = value;
-                continue;
             }
-
-            settings[match.Groups["name"].Value] = value;
         }
         return settings;
     }
@@ -121,12 +106,13 @@ public sealed class ConfigurationGenerator(StackPaths paths, StackOptions option
     private static string RenderCaSettings(IReadOnlyDictionary<string, string> overrides, string caBundlePath)
     {
         var bundlePath = Normalize(caBundlePath);
+        var quotedBundlePath = "\"" + bundlePath + "\"";
         var curl = overrides.TryGetValue("curl.cainfo", out var curlOverride)
             ? curlOverride
-            : $"\\"{bundlePath}\\"";
+            : quotedBundlePath;
         var openssl = overrides.TryGetValue("openssl.cafile", out var sslOverride)
             ? sslOverride
-            : $"\\"{bundlePath}\\"";
+            : quotedBundlePath;
         return string.Join(Environment.NewLine,
         [
             ManagedCaSettingComment,
