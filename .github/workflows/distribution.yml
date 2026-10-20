@@ -118,7 +118,7 @@ jobs:
           dotnet run --project tests/DevStack.TerminalChecks/DevStack.TerminalChecks.csproj -- --render $testRoot
           if ($LASTEXITCODE -ne 0) { throw 'Could not render the fresh installation PHP configuration.' }
           $phpIni = Get-Content "$testRoot\runtime\config\generated\php.ini" -Raw
-          $bundlePath = "$testRoot\runtime\certificates\cacert.pem".Replace('\\', '/')
+          $bundlePath = "$testRoot\runtime\certificates\cacert.pem".Replace('\', '/')
           if ($phpIni -notmatch [regex]::Escape("curl.cainfo=`"$bundlePath`"") -or
               $phpIni -notmatch [regex]::Escape("openssl.cafile=`"$bundlePath`"")) {
             throw 'Generated PHP configuration does not point cURL and OpenSSL at the bundled CA file.'
