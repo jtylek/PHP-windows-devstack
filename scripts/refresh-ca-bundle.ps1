@@ -87,7 +87,7 @@ try {
 
     if (-not $verified) {
         if (Test-ExistingBundle -Path $bundlePath) {
-            Write-Warning "Could not refresh the CA bundle; retaining the existing verified-format bundle. $($lastError.Exception.Message)"
+            Write-Warning "Could not refresh the CA bundle; retaining the existing bundle. $($lastError.Exception.Message)"
             return
         }
         throw "Could not install the PHP CA bundle. $($lastError.Exception.Message)"
