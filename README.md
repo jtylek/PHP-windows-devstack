@@ -243,6 +243,13 @@ changed. PowerShell profiles are not loaded, preventing another profile from
 selecting a different PHP. Close and reopen the terminal after changing PHP
 settings. Additional CLI ini files, if needed, belong in `data\config\php-cli.d`.
 
+The installer downloads and SHA-256 verifies the current Mozilla CA bundle from the
+curl project into `runtime\certificates\cacert.pem` on fresh installs and updates.
+Generated PHP configuration points both cURL and OpenSSL at that bundle, so CLI
+scripts and the Apache PHP module can validate outgoing HTTPS. If you have set
+`curl.cainfo` or `openssl.cafile` yourself in `runtime\templates\php.ini.template`,
+DevStack preserves those values.
+
 ## Network security
 
 The development services are local-only by default. See
