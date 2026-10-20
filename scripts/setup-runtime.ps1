@@ -248,6 +248,10 @@ Write-Host '[4/4] Preparing phpMyAdmin...'
 Write-ProgressState -Completed 3 -Total 7 -Message 'Downloading and verifying phpMyAdmin...'
 & $installer -Component phpmyadmin -ManifestPath $manifestPath -DestinationRoot $installFullPath -Force
 Write-ProgressState -Completed 4 -Total 7 -Message 'phpMyAdmin is ready.'
+Write-Host '[5/5] Refreshing the PHP Mozilla CA certificate bundle...'
+Write-ProgressState -Completed 4 -Total 7 -Message 'Downloading and verifying PHP CA certificate bundle...'
+& (Join-Path $PSScriptRoot 'refresh-ca-bundle.ps1') -InstallRoot $installFullPath
+Write-ProgressState -Completed 4 -Total 7 -Message 'PHP CA certificate bundle is ready.'
 
 $phpMyAdminRoot = Join-Path $installFullPath 'phpmyadmin'
 Disable-PhpMyAdminSignon -InstallRoot $installFullPath -PhpMyAdminRoot $phpMyAdminRoot
