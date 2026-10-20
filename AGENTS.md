@@ -110,12 +110,11 @@ known workarounds change.
 - Distribution runs a Windows PowerShell 5.1 in-place upgrade test with a real
   database row, custom project/config files, ports, secrets and unchanged receipts.
   Never publish the RC3 installer unless this test passes.
-- phpMyAdmin uses a local sign-on endpoint under `runtime/internal`, served via
-  `/_devstack` with Apache `Require local`. `PhpMyAdminSignOn` creates a 60-second,
-  single-use token record in a current-user ACL-protected directory and opens a
-  local POST handoff. Never put the root password/token in a URL, log, command
-  argument, or persistent phpMyAdmin config. The endpoint provides a local manual
-  credentials form if a user browses to phpMyAdmin without the Control Panel.
+- The **Open phpMyAdmin** button opens the local phpMyAdmin URL in the default
+  browser. phpMyAdmin uses its normal cookie login; users enter the MariaDB
+  username and password themselves. Installer upgrades remove the old managed
+  one-time sign-on block and endpoint while preserving custom phpMyAdmin config.
+
 
 ### PowerShell and path handling
 

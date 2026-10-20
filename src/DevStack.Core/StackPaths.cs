@@ -15,7 +15,6 @@ public sealed record StackPaths(string Root)
     public string SessionRoot => Path.Combine(DataRoot, "sessions");
     public string SmtpRoot => Path.Combine(DataRoot, "smtp");
     public string WebRoot => Path.Combine(Root, "www");
-    public string InternalRoot => Path.Combine(Root, "runtime", "internal");
 
     public static StackPaths FromApplicationDirectory() =>
         new(Path.GetFullPath(AppContext.BaseDirectory));

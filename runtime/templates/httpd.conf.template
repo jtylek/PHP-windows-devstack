@@ -29,12 +29,5 @@ Alias /phpmyadmin "{{PHPMYADMIN_ROOT}}"
     Require local
 </Directory>
 
-Alias /_devstack "{{INTERNAL_ROOT}}"
-<Directory "{{INTERNAL_ROOT}}">
-    Options -Indexes
-    AllowOverride None
-    Require local
-</Directory>
-
 ErrorLog "{{LOG_ROOT}}/apache-error.log"
 CustomLog "{{LOG_ROOT}}/apache-access.log" common

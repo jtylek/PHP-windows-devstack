@@ -59,9 +59,26 @@ try {
     cmd /c "mklink /J `"$root\www\linked-project`" `"$junctionTarget`"" *> $null
     if ($LASTEXITCODE -ne 0) { throw 'Could not create test project junction.' }
     Add-Content "$root\phpmyadmin\config.inc.php" '// user phpMyAdmin configuration sentinel'
+    Add-Content "$root\phpmyadmin\config.inc.php" @'
+ // PHPDevStack local one-time sign-on. Do not change this block manually.
+ $cfg['Servers'][$i]['auth_type'] = 'signon';
+ $cfg['Servers'][$i]['SignonSession'] = 'DevStackPhpMyAdmin';
+ $cfg['Servers'][$i]['SignonURL'] = '/_devstack/phpmyadmin-signon.php';
+'@ -Encoding utf8
+    Add-Content "$root\runtime\templates\httpd.conf.template" @'
+# PHPDevStack phpMyAdmin local sign-on; this endpoint never accepts LAN clients.
+Alias /_devstack "{{INTERNAL_ROOT}}"
+<Directory "{{INTERNAL_ROOT}}">
+    Options -Indexes
+    AllowOverride None
+    Require local
+</Directory>
+'@ -Encoding utf8
+    [IO.Directory]::CreateDirectory("$root\runtime\internal") | Out-Null
+    [IO.File]::WriteAllText("$root\runtime\internal\phpmyadmin-signon.php", 'legacy endpoint')
     $protectedPaths = @('www/index.php', 'www/upgrade-project.txt', 'data/config/ports.json',
         'data/config/mariadb-settings.json', 'data/secrets/mariadb-root-password.dpapi',
-        'phpmyadmin/config.inc.php', 'runtime/templates/httpd.conf.template', 'runtime/templates/php.ini.template',
+        'runtime/templates/php.ini.template',
         'runtime/apache/.devstack-receipt.json','runtime/php/.devstack-receipt.json',
         'runtime/mariadb/.devstack-receipt.json','phpmyadmin/.devstack-receipt.json')
     $hashes = @{}
@@ -85,9 +102,12 @@ try {
     if ((Get-Content (Join-Path $junctionTarget 'external-project.txt') -Raw) -ne 'external project sentinel') { throw 'Project junction target was changed.' }
     $template = Get-Content "$root\runtime\templates\mariadb.ini.template" -Raw
     if ($template -notmatch 'innodb_buffer_pool_size=\{\{INNODB_BUFFER_POOL_SIZE\}\}') { throw 'New MariaDB defaults were not merged.' }
-    if (-not (Test-Path "$root\runtime\internal\phpmyadmin-signon.php")) { throw 'Local phpMyAdmin sign-on endpoint is missing.' }
-    if ((Get-Content "$root\phpmyadmin\config.inc.php" -Raw) -notmatch 'PHPDevStack local one-time sign-on') { throw 'phpMyAdmin sign-on configuration was not installed.' }
-    if ((Get-Content "$root\runtime\templates\httpd.conf.template" -Raw) -notmatch 'PHPDevStack phpMyAdmin local sign-on') { throw 'Apache local sign-on rule was not installed.' }
+    $pmaConfig = Get-Content "$root\phpmyadmin\config.inc.php" -Raw
+    if ($pmaConfig -notmatch 'user phpMyAdmin configuration sentinel') { throw 'Custom phpMyAdmin configuration was not preserved.' }
+    if ($pmaConfig -notmatch "\['auth_type'\]\s*=\s*'cookie'" -or $pmaConfig -match 'PHPDevStack local one-time sign-on|SignonSession|SignonURL|auth_type.*signon') { throw 'Legacy phpMyAdmin sign-on configuration was not removed.' }
+    if (Test-Path "$root\runtime\internal\phpmyadmin-signon.php") { throw 'Legacy phpMyAdmin sign-on endpoint was not removed.' }
+    $httpdTemplate = Get-Content "$root\runtime\templates\httpd.conf.template" -Raw
+    if ($httpdTemplate -notmatch 'custom HTTPS include preserved' -or $httpdTemplate -match '_devstack|PHPDevStack phpMyAdmin local sign-on') { throw 'Legacy Apache sign-on rule was not removed or custom configuration was lost.' }
     Start-TestDatabase
     $value = & $client "--defaults-extra-file=$clientIni" --protocol=tcp --host=127.0.0.1 "--port=$port" --user=root --batch --skip-column-names -e 'SELECT value FROM upgrade_sentinel.keep_me'
     if ($LASTEXITCODE -ne 0 -or $value -ne 'database survived upgrade') { throw 'Database contents did not survive upgrade.' }

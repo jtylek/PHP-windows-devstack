@@ -252,12 +252,13 @@ public partial class MainWindow : Window
     {
         try
         {
-            new PhpMyAdminSignOn(StackPaths.FromApplicationDirectory(), options).Launch();
-            AppendLog("Opening phpMyAdmin with a one-time local root sign-in.");
+            var url = $"http://127.0.0.1:{options.HttpPort}/phpmyadmin/";
+            Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+            AppendLog("Opening phpMyAdmin.");
         }
         catch (Exception exception)
         {
-            AppendLog($"phpMyAdmin sign-in failed: {exception.Message}");
+            AppendLog($"Could not open phpMyAdmin: {exception.Message}");
             MessageBox.Show(this, exception.Message, "Could not open phpMyAdmin", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
