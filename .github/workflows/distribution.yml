@@ -104,6 +104,7 @@ jobs:
             'runtime/apache/bin/httpd.exe',
             'runtime/php/php.exe',
             'runtime/mariadb/bin/mariadbd.exe',
+            'runtime/certificates/cacert.pem',
             'data/mariadb/mysql',
             '.devstack-ready'
           )) {
@@ -112,6 +113,31 @@ jobs:
               Get-Content "$testRoot\logs\setup-runtime.log" -ErrorAction SilentlyContinue
               throw "Installed path is missing: $path"
             }
+          }
+
+          dotnet run --project tests/DevStack.TerminalChecks/DevStack.TerminalChecks.csproj -- --render $testRoot
+          if ($LASTEXITCODE -ne 0) { throw 'Could not render the fresh installation PHP configuration.' }
+          $phpIni = Get-Content "$testRoot\runtime\config\generated\php.ini" -Raw
+          $bundlePath = "$testRoot\runtime\certificates\cacert.pem".Replace('\\', '/')
+          if ($phpIni -notmatch [regex]::Escape("curl.cainfo=`"$bundlePath`"") -or
+              $phpIni -notmatch [regex]::Escape("openssl.cafile=`"$bundlePath`"")) {
+            throw 'Generated PHP configuration does not point cURL and OpenSSL at the bundled CA file.'
+          }
+          $probe = Join-Path $env:RUNNER_TEMP 'php-ca-probe.php'
+          @'
+          <?php
+          $curl = curl_init('https://curl.se/');
+          curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+          curl_setopt($curl, CURLOPT_TIMEOUT, 20);
+          curl_exec($curl);
+          echo 'curl=', curl_errno($curl), PHP_EOL;
+          $stream = @file_get_contents('https://curl.se/');
+          echo 'openssl=', $stream === false ? 'failed' : 'ok', PHP_EOL;
+          '@ | Set-Content -LiteralPath $probe -Encoding ascii
+          $probeOutput = & "$testRoot\runtime\php\php.exe" -c "$testRoot\runtime\config\generated\php.ini" $probe 2>&1
+          if ($LASTEXITCODE -ne 0 -or $probeOutput -notmatch 'curl=0' -or $probeOutput -notmatch 'openssl=ok') {
+            $probeOutput
+            throw 'PHP CLI could not validate HTTPS with the bundled CA certificate file.'
           }
 
       - name: Verify in-place update preserves existing data
