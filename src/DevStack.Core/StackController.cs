@@ -93,8 +93,29 @@ public sealed class StackController : IDisposable
 
     public async Task StopAllAsync()
     {
-        await StopApacheAsync();
-        await StopMariaDbAsync();
+        var failures = new List<Exception>();
+        try
+        {
+            await StopApacheAsync();
+        }
+        catch (Exception exception)
+        {
+            failures.Add(exception);
+        }
+
+        try
+        {
+            await StopMariaDbAsync();
+        }
+        catch (Exception exception)
+        {
+            failures.Add(exception);
+        }
+
+        if (failures.Count > 0)
+        {
+            throw new AggregateException("One or more DevStack services could not be stopped.", failures);
+        }
     }
 
     public async Task StopApacheAsync()
