@@ -140,14 +140,65 @@ public partial class MainWindow : Window
     private async void StopAll_Click(object sender, RoutedEventArgs e)
     {
         StopButton.IsEnabled = false;
+        StartButton.IsEnabled = false;
+        StopApacheButton.IsEnabled = false;
+        StopMariaDbButton.IsEnabled = false;
+        StopSmtpButton.IsEnabled = false;
+        StartApacheButton.IsEnabled = false;
+        StartMariaDbButton.IsEnabled = false;
+        StartSmtpButton.IsEnabled = false;
+
+        var failures = new List<Exception>();
         try
         {
-            await controller.StopAllAsync();
-            AppendLog("DevStack stopped.");
+            try
+            {
+                await controller.StopAllAsync();
+            }
+            catch (Exception exception)
+            {
+                failures.Add(exception);
+            }
+
+            try
+            {
+                await smtpCapture.StopAsync();
+            }
+            catch (Exception exception)
+            {
+                failures.Add(exception);
+            }
+
+            if (failures.Count == 0)
+            {
+                AppendLog("All services stopped. Control Panel remains open.");
+                return;
+            }
+
+            var details = new List<string>();
+            foreach (var failure in failures)
+            {
+                if (failure is AggregateException aggregate)
+                {
+                    details.AddRange(aggregate.Flatten().InnerExceptions.Select(exception => exception.Message));
+                }
+                else
+                {
+                    details.Add(failure.Message);
+                }
+            }
+
+            var message = string.Join(Environment.NewLine, details);
+            AppendLog($"Stop all finished with errors: {message}");
+            MessageBox.Show(
+                this,
+                $"The Control Panel remains open. Check service status and the log. Details:{Environment.NewLine}{message}",
+                "Some services could not be stopped",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
         }
         finally
         {
-            StopButton.IsEnabled = true;
             UpdateStatus();
         }
     }
