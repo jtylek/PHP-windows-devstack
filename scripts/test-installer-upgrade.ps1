@@ -47,6 +47,9 @@ try {
 
     # Simulate a user's old template and hand-added HTTPS configuration.
     [IO.File]::WriteAllText("$root\runtime\templates\mariadb.ini.template", "[mariadbd]`r`nbasedir=`"{{MARIADB_ROOT}}`"`r`ndatadir=`"{{MARIADB_DATA_ROOT}}`"`r`nport={{MARIADB_PORT}}`r`nbind-address=127.0.0.1`r`n[client]`r`nport={{MARIADB_PORT}}`r`n")
+    # A template from before the .ht* deny rule existed: upgrade must add it back.
+    $oldHttpd = [regex]::Replace([IO.File]::ReadAllText("$root\runtime\templates\httpd.conf.template"), '(?m)^# Never serve \.htaccess[^\r\n]*\r?\n<Files "\.ht\*">\r?\n[^\r\n]*\r?\n</Files>\r?\n?', '')
+    [IO.File]::WriteAllText("$root\runtime\templates\httpd.conf.template", $oldHttpd)
     Add-Content "$root\runtime\templates\httpd.conf.template" '# custom HTTPS include preserved'
     [IO.Directory]::CreateDirectory("$root\data\config") | Out-Null
     [IO.File]::WriteAllText("$root\data\config\ports.json", '{"HttpPort":8088,"MariaDbPort":3311}')
@@ -113,6 +116,7 @@ openssl.cafile="$customCaPath"
     if (Test-Path "$root\runtime\internal\phpmyadmin-signon.php") { throw 'Legacy phpMyAdmin sign-on endpoint was not removed.' }
     $httpdTemplate = Get-Content "$root\runtime\templates\httpd.conf.template" -Raw
     if ($httpdTemplate -notmatch 'custom HTTPS include preserved' -or $httpdTemplate -match '_devstack|PHPDevStack phpMyAdmin local sign-on') { throw 'Legacy Apache sign-on rule was not removed or custom configuration was lost.' }
+    if ([regex]::Matches($httpdTemplate, '(?m)^<Files "\.ht\*">').Count -ne 1) { throw 'Upgrade did not add exactly one .ht* deny rule to the Apache template.' }
     Start-TestDatabase
     $value = & $client "--defaults-extra-file=$clientIni" --protocol=tcp --host=127.0.0.1 "--port=$port" --user=root --batch --skip-column-names -e 'SELECT value FROM upgrade_sentinel.keep_me'
     if ($LASTEXITCODE -ne 0 -or $value -ne 'database survived upgrade') { throw 'Database contents did not survive upgrade.' }

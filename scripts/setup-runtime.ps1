@@ -122,6 +122,20 @@ function Disable-PhpMyAdminSignon {
     }
 }
 
+function Add-ApacheHtAccessDeny {
+    param([Parameter(Mandatory)][string]$InstallRoot)
+
+    # Upgrades keep the user's httpd template, so templates from before the rule
+    # existed get it appended here; Apache's stock config has it, ours didn't.
+    $template = Join-Path $InstallRoot 'runtime/templates/httpd.conf.template'
+    if (-not (Test-Path -LiteralPath $template)) { return }
+    $httpd = [IO.File]::ReadAllText($template)
+    if ($httpd -match '(?m)^\s*<Files\s+"?\.ht\*"?>') { return }
+    $newline = if ($httpd.Contains("`r`n")) { "`r`n" } else { "`n" }
+    $rule = @('# Never serve .htaccess/.htpasswd (as Apache''s stock httpd.conf does)', '<Files ".ht*">', '    Require all denied', '</Files>') -join $newline
+    [IO.File]::WriteAllText($template, $httpd.TrimEnd() + $newline + $newline + $rule + $newline, [Text.UTF8Encoding]::new($false))
+}
+
 function Initialize-PhpMyAdminStorage {
     param(
         [Parameter(Mandatory)][string]$InstallRoot,
@@ -255,6 +269,7 @@ Write-ProgressState -Completed 4 -Total 7 -Message 'PHP CA certificate bundle is
 
 $phpMyAdminRoot = Join-Path $installFullPath 'phpmyadmin'
 Disable-PhpMyAdminSignon -InstallRoot $installFullPath -PhpMyAdminRoot $phpMyAdminRoot
+Add-ApacheHtAccessDeny -InstallRoot $installFullPath
 if ($existingDatabase) {
     if (-not (Test-Path -LiteralPath (Join-Path $phpMyAdminRoot 'config.inc.php'))) {
         throw 'Existing phpMyAdmin configuration is missing. Restore it from the pre-update backup; setup will not reset passwords or database contents.'

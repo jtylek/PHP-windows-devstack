@@ -70,7 +70,7 @@ To validate the expected repository and package layout:
 
 ### Nontechnical Windows installation
 
-Download the [PHP Windows DevStack 1.0 RC12 installer](https://github.com/jtylek/PHP-windows-devstack/releases/download/v1.0.0-rc.12/PHP-Windows-DevStack-Setup-1.0.0-rc.12-win-x64.exe) and run it. The default installation directory is `C:\PHPDevStack`; installing there requires administrator
+Download the [PHP Windows DevStack 1.0 RC13 installer](https://github.com/jtylek/PHP-windows-devstack/releases/download/v1.0.0-rc.13/PHP-Windows-DevStack-Setup-1.0.0-rc.13-win-x64.exe) and run it. The default installation directory is `C:\PHPDevStack`; installing there requires administrator
 rights. It installs a self-contained control panel, downloads checksum-pinned
 Apache, PHP and MariaDB archives, initializes a local MariaDB instance, and
 creates shortcuts automatically.
@@ -141,6 +141,8 @@ and are not changed by setup.
 Existing `www`, databases, passwords, ports, PHP/MariaDB settings, phpMyAdmin
 configuration, and Apache/PHP templates are preserved. Missing MariaDB tuning
 defaults are added to its template; existing explicit values remain unchanged.
+An Apache template without the rule that blocks `.htaccess`/`.htpasswd`
+downloads gets it appended.
 Runtime versions are compared with the installer's pinned supported manifest:
 equal or newer installed versions display **Does not need updating - skipped**.
 This is not a query of arbitrary latest upstream releases. Cross-series MariaDB

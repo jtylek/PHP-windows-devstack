@@ -27,7 +27,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  RELEASE_TAG: v1.0.0-rc.12
+  RELEASE_TAG: v1.0.0-rc.13
   APACHE_ARTIFACT_ID: "11881045146"
   APACHE_SHA256: 10b310843c4763d7efa2c04d3e474c35bb9dee927babb5a167cbebd1545eff3f
 
@@ -63,7 +63,7 @@ jobs:
         run: |
           gh release view $env:RELEASE_TAG *> $null
           if ($LASTEXITCODE -ne 0) {
-            gh release create $env:RELEASE_TAG --target $env:GITHUB_SHA --prerelease --title 'PHP Windows DevStack 1.0 RC12' --notes 'Unsigned Windows 10/11 x64 release candidate.'
+            gh release create $env:RELEASE_TAG --target $env:GITHUB_SHA --prerelease --title 'PHP Windows DevStack 1.0 RC13' --notes 'Unsigned Windows 10/11 x64 release candidate.'
           }
           gh release upload $env:RELEASE_TAG artifacts/apache-release/* --clobber
 
@@ -90,7 +90,7 @@ jobs:
       - name: Install silently and verify runtime layout
         shell: pwsh
         run: |
-          $setup = 'artifacts/PHP-Windows-DevStack-Setup-1.0.0-rc.12-win-x64.exe'
+          $setup = 'artifacts/PHP-Windows-DevStack-Setup-1.0.0-rc.13-win-x64.exe'
           $testRoot = 'C:\ds-test'
           $installerLog = 'C:\ds-installer.log'
           $process = Start-Process $setup -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', "/DIR=$testRoot", "/LOG=$installerLog" -Wait -PassThru
@@ -167,14 +167,14 @@ jobs:
 
       - name: Verify in-place update preserves existing data
         shell: powershell
-        run: ./scripts/test-installer-upgrade.ps1 -SetupPath "${{ github.workspace }}/artifacts/PHP-Windows-DevStack-Setup-1.0.0-rc.12-win-x64.exe"
+        run: ./scripts/test-installer-upgrade.ps1 -SetupPath "${{ github.workspace }}/artifacts/PHP-Windows-DevStack-Setup-1.0.0-rc.13-win-x64.exe"
 
       - name: Write installer checksum
         shell: pwsh
         run: |
-          $setup = 'artifacts/PHP-Windows-DevStack-Setup-1.0.0-rc.12-win-x64.exe'
+          $setup = 'artifacts/PHP-Windows-DevStack-Setup-1.0.0-rc.13-win-x64.exe'
           $hash = (Get-FileHash $setup -Algorithm SHA256).Hash.ToLowerInvariant()
-          "$hash  PHP-Windows-DevStack-Setup-1.0.0-rc.12-win-x64.exe" | Set-Content "$setup.sha256" -Encoding ascii
+          "$hash  PHP-Windows-DevStack-Setup-1.0.0-rc.13-win-x64.exe" | Set-Content "$setup.sha256" -Encoding ascii
 
       - name: Upload setup to release
         shell: pwsh
@@ -182,16 +182,16 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release upload $env:RELEASE_TAG `
-            artifacts/PHP-Windows-DevStack-Setup-1.0.0-rc.12-win-x64.exe `
-            artifacts/PHP-Windows-DevStack-Setup-1.0.0-rc.12-win-x64.exe.sha256 `
+            artifacts/PHP-Windows-DevStack-Setup-1.0.0-rc.13-win-x64.exe `
+            artifacts/PHP-Windows-DevStack-Setup-1.0.0-rc.13-win-x64.exe.sha256 `
             --clobber
 
       - name: Upload workflow artifact
         uses: actions/upload-artifact@v4
         with:
-          name: PHP-Windows-DevStack-Setup-1.0.0-rc.12-win-x64
+          name: PHP-Windows-DevStack-Setup-1.0.0-rc.13-win-x64
           path: |
-            artifacts/PHP-Windows-DevStack-Setup-1.0.0-rc.12-win-x64.exe
-            artifacts/PHP-Windows-DevStack-Setup-1.0.0-rc.12-win-x64.exe.sha256
+            artifacts/PHP-Windows-DevStack-Setup-1.0.0-rc.13-win-x64.exe
+            artifacts/PHP-Windows-DevStack-Setup-1.0.0-rc.13-win-x64.exe.sha256
           if-no-files-found: error
           retention-days: 14

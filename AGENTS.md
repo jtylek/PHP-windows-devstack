@@ -160,6 +160,9 @@ known workarounds change.
   stock file provides that projects rely on must be added to
   `runtime/templates/httpd.conf.template` explicitly. It denies `.ht*` files
   (`<Files ".ht*">`), which the stock config does but a bare config doesn't.
+  Upgrades keep the user's template, so `Add-ApacheHtAccessDeny` in
+  `setup-runtime.ps1` appends the rule to one that lacks it; the upgrade test
+  checks this.
 - Apache and MariaDB can be started/stopped independently. Changing PHP
   extensions or OPcache settings should not restart MariaDB.
 
