@@ -7,6 +7,10 @@ behind a small desktop control panel.
 > Project status: unsigned release candidate. The automated distribution is intended for
 > Windows 10/11 x64 testing and is not ready for production use.
 
+## PHP security update
+
+PHP Windows DevStack bundles PHP 8.5.12 Thread Safe x64. PHP 8.5.12 fixes the critical security vulnerabilities CVE-2026-109618 and CVE-2026-109619. The official Windows archive URL and its SHA-256 checksum are pinned in `runtime/manifest/components.json`; the installer verifies the checksum before extracting PHP.
+
 ## Initial goals
 
 - Run without administrator rights in portable mode.
