@@ -22,6 +22,11 @@ DocumentRoot "{{WWW_ROOT}}"
     Require local
 </Directory>
 
+# Never serve .htaccess/.htpasswd (as Apache's stock httpd.conf does)
+<Files ".ht*">
+    Require all denied
+</Files>
+
 Alias /phpmyadmin "{{PHPMYADMIN_ROOT}}"
 <Directory "{{PHPMYADMIN_ROOT}}">
     Options FollowSymLinks

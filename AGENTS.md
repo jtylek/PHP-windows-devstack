@@ -156,6 +156,10 @@ known workarounds change.
 - When diagnosing a native DLL error, verify that all PHP extension DLLs match
   the bundled PHP build and that no older PHP directory precedes DevStack on
   `PATH`.
+- The generated `httpd.conf` is minimal, not Apache's stock config: anything the
+  stock file provides that projects rely on must be added to
+  `runtime/templates/httpd.conf.template` explicitly. It denies `.ht*` files
+  (`<Files ".ht*">`), which the stock config does but a bare config doesn't.
 - Apache and MariaDB can be started/stopped independently. Changing PHP
   extensions or OPcache settings should not restart MariaDB.
 
