@@ -184,7 +184,7 @@ the installer verifies its SHA-256 checksum before extraction.
 
 ### Developer installation
 
-The manifest pins Apache 2.4.69, PHP 8.5.11 Thread Safe x64 and MariaDB 11.8.9
+The manifest pins Apache 2.4.69, PHP 8.5.12 Thread Safe x64 and MariaDB 11.8.9
 LTS for Windows. To download, verify and extract all packages:
 
 ```powershell

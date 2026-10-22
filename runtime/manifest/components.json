@@ -27,15 +27,15 @@
     {
       "name": "php",
       "displayName": "PHP",
-      "version": "8.5.11",
+      "version": "8.5.12",
       "platform": "windows",
       "architecture": "x64",
       "variant": "thread-safe",
       "enabled": true,
       "archiveType": "zip",
       "sourcePage": "https://www.php.net/downloads.php?os=windows&version=8.5",
-      "archiveUrl": "https://downloads.php.net/~windows/releases/archives/php-8.5.11-Win32-vs17-x64.zip",
-      "sha256": "c83d5a1e0d760fb026ce695d8a70a73a4c81ac224b3e5c425406b23a7d53e1de",
+      "archiveUrl": "https://downloads.php.net/~windows/releases/php-8.5.12-Win32-vs17-x64.zip",
+      "sha256": "660f3ff6ccbdf60f9607ef54bdba85ee22a58d61fd3633b38a93d57fb7c3d184",
       "targetDirectory": "php",
       "stripTopDirectory": false,
       "requiredFiles": [
