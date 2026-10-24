@@ -122,7 +122,7 @@ public sealed class PhpConfigurationManager
         return string.Join(Environment.NewLine,
         [
             "opcache.enable=1",
-            "opcache.enable_cli=0",
+            "opcache.enable_cli=1",
             $"opcache.memory_consumption={settings.MemoryConsumptionMb}",
             $"opcache.interned_strings_buffer={settings.InternedStringsBufferMb}",
             $"opcache.max_accelerated_files={settings.MaxAcceleratedFiles}",
