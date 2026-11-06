@@ -82,6 +82,13 @@ try
     File.WriteAllText(Path.Combine(paths.PhpRoot, "ext", "php_pdo_sqlite.dll"), string.Empty);
     File.WriteAllText(Path.Combine(paths.PhpRoot, "ext", "php_sqlite3.dll"), string.Empty);
     new ConfigurationGenerator(paths, new StackOptions(8088, 3311)).Generate();
+    var generatedApache = File.ReadAllText(Path.Combine(paths.GeneratedConfigRoot, "httpd.conf"));
+    Check(generatedApache.Contains("Listen 8088"), "Apache must listen on all interfaces for LAN clients.");
+    Check(generatedApache.Contains("Require all granted"), "Apache web root must accept LAN clients.");
+    Check(generatedApache.Contains("Alias /phpmyadmin"), "phpMyAdmin alias is missing.");
+    var pmaSectionStart = generatedApache.IndexOf("<Directory \"" + paths.PhpMyAdminRoot + "\">", StringComparison.Ordinal);
+    Check(pmaSectionStart >= 0 && generatedApache.IndexOf("Require local", pmaSectionStart, StringComparison.Ordinal) >= 0,
+        "phpMyAdmin must remain local-only.");
     var phpTemplatePath = Path.Combine(paths.TemplateRoot, "php.ini.template");
     var phpIniPath = Path.Combine(paths.GeneratedConfigRoot, "php.ini");
     var phpIni = File.ReadAllText(phpIniPath);
@@ -110,6 +117,7 @@ try
 
     var databaseIni = File.ReadAllText(Path.Combine(paths.GeneratedConfigRoot, "mariadb.ini"));
     var serverSection = databaseIni.Split("[client]", StringSplitOptions.None)[0];
+    Check(serverSection.Contains("bind-address=127.0.0.1"), "MariaDB must remain bound to localhost.");
     foreach (var setting in new[] { "innodb_buffer_pool_size=1G", "innodb_flush_log_at_trx_commit=2",
         "innodb_log_file_size=256M", "innodb_io_capacity=1000", "innodb_io_capacity_max=4000",
         "table_definition_cache=1000", "tmp_table_size=64M", "max_heap_table_size=64M",
