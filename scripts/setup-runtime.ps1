@@ -145,7 +145,7 @@ function Set-ApacheLanDefaults {
     if (-not (Test-Path -LiteralPath $template)) { return }
     $httpd = [IO.File]::ReadAllText($template)
     $updated = $httpd.Replace('Listen 127.0.0.1:{{HTTP_PORT}}', 'Listen {{HTTP_PORT}}')
-    $webRootPattern = '(?s)(<Directory "{{WWW_ROOT}}">.*?    )Require local(\r?\n</Directory>)'
+    $webRootPattern = '(?s)(<Directory "{{WWW_ROOT}}">(?:(?!</Directory>).)*?    )Require local(\r?\n</Directory>)'
     $updated = [regex]::Replace($updated, $webRootPattern, '$1Require all granted$2', 1)
     if ($updated -cne $httpd) {
         [IO.File]::WriteAllText($template, $updated, [Text.UTF8Encoding]::new($false))
