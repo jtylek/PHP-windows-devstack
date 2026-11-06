@@ -14,8 +14,9 @@ known workarounds change.
   panel.
 - Do not reintroduce XAMPP branding or references. DevStack is an independent
   package.
-- The runtime is intended for local development and binds services to
-  `127.0.0.1` by default. It is not a production distribution.
+- The runtime is intended for development, not production. Apache serves `www/`
+  on all interfaces for LAN clients; MariaDB, phpMyAdmin, and SMTP capture remain
+  loopback-only by default.
 
 ## Repository structure
 
@@ -49,8 +50,8 @@ known workarounds change.
   The UI saves overrides for next restart and opens both database logs. Do not
   pass the new template to an old panel that cannot resolve its placeholder.
 
-- Apache: `127.0.0.1:8080`.
-- MariaDB: `127.0.0.1:3307`.
+- Apache: all interfaces, port `8080`; LAN access is subject to Windows Firewall.
+- MariaDB: `127.0.0.1:3307` (loopback-only).
 - SMTP capture: `127.0.0.1:25`.
 - phpMyAdmin: `http://127.0.0.1:8080/phpmyadmin` unless the Apache port is
   changed in the control panel.
