@@ -96,6 +96,9 @@ try
     var phpTemplatePath = Path.Combine(paths.TemplateRoot, "php.ini.template");
     var phpIniPath = Path.Combine(paths.GeneratedConfigRoot, "php.ini");
     var phpIni = File.ReadAllText(phpIniPath);
+    var opcacheSettings = new PhpConfigurationManager(paths).GetOpcacheSettings();
+    Check(opcacheSettings.Enabled, "OPcache must be enabled by default.");
+    Check(phpIni.Contains("opcache.enable=1") && phpIni.Contains("opcache.enable_cli=1"), "Generated php.ini must enable OPcache for web and CLI by default.");
     var caPath = paths.CaBundlePath.Replace('\\', '/');
     Check(phpIni.Contains($"curl.cainfo=\"{caPath}\""), "PHP cURL must use the bundled CA certificate file.");
     Check(phpIni.Contains($"openssl.cafile=\"{caPath}\""), "PHP OpenSSL must use the bundled CA certificate file.");
