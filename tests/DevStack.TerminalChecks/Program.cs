@@ -86,9 +86,13 @@ try
     Check(generatedApache.Contains("Listen 8088"), "Apache must listen on all interfaces for LAN clients.");
     Check(generatedApache.Contains("Require all granted"), "Apache web root must accept LAN clients.");
     Check(generatedApache.Contains("Alias /phpmyadmin"), "phpMyAdmin alias is missing.");
-    var pmaSectionStart = generatedApache.IndexOf("<Directory \"" + paths.PhpMyAdminRoot + "\">", StringComparison.Ordinal);
-    Check(pmaSectionStart >= 0 && generatedApache.IndexOf("Require local", pmaSectionStart, StringComparison.Ordinal) >= 0,
-        "phpMyAdmin must remain local-only.");
+    var normalizedPhpMyAdminRoot = paths.PhpMyAdminRoot.Replace('\\', '/');
+    var pmaSectionStart = generatedApache.IndexOf("<Directory \"" + normalizedPhpMyAdminRoot + "\">", StringComparison.Ordinal);
+    var pmaSectionEnd = pmaSectionStart >= 0 ? generatedApache.IndexOf("</Directory>", pmaSectionStart, StringComparison.Ordinal) : -1;
+    var pmaSection = pmaSectionStart >= 0 && pmaSectionEnd > pmaSectionStart
+        ? generatedApache[pmaSectionStart..pmaSectionEnd]
+        : string.Empty;
+    Check(pmaSection.Contains("Require local"), "phpMyAdmin must remain local-only.");
     var phpTemplatePath = Path.Combine(paths.TemplateRoot, "php.ini.template");
     var phpIniPath = Path.Combine(paths.GeneratedConfigRoot, "php.ini");
     var phpIni = File.ReadAllText(phpIniPath);
