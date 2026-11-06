@@ -16,7 +16,7 @@ PHP Windows DevStack bundles PHP 8.5.12 Thread Safe x64. PHP 8.5.12 fixes the cr
 - Run without administrator rights in portable mode.
 - Start and stop Apache and MariaDB from one control panel.
 - Generate relocatable configuration from templates.
-- Bind HTTP and database listeners to `127.0.0.1` by default.
+- Serve the `www/` web root to clients on the LAN; keep MariaDB bound to `127.0.0.1`.
 - Keep applications, database files and local settings outside replaceable
   runtime directories.
 - Verify every downloaded runtime archive by SHA-256 before extraction.
@@ -31,8 +31,8 @@ PHP Windows DevStack bundles PHP 8.5.12 Thread Safe x64. PHP 8.5.12 fixes the cr
 | PHP | PHP 8.5 x64 Thread Safe |
 | Database | MariaDB LTS x64 |
 | Web root | `www/` |
-| HTTP endpoint | `http://127.0.0.1:8080` |
-| Database endpoint | `127.0.0.1:3307` |
+| HTTP access | Local: `http://127.0.0.1:8080`; LAN: `http://<PC-LAN-IP>:8080` |
+| Database endpoint | `127.0.0.1:3307` (local only) |
 
 ## Repository layout
 
@@ -98,6 +98,14 @@ The control panel also provides **PHP extensions**, **OPcache settings**, and
 can be changed to common ports such as `80` and `3306`. DevStack checks that a
 new port is available before saving it, and the services must be stopped before
 changing ports.
+
+Apache listens on all network interfaces and serves files from `www/` to LAN
+clients on the configured HTTP port. Find the PC's private IPv4 address with
+`ipconfig`, then open `http://<PC-LAN-IP>:8080` from another device (replace
+`8080` if you changed Apache's port). Windows Defender Firewall must allow the
+selected Apache port on the Private network profile. Do not expose it through a
+Public profile or router port forwarding. MariaDB remains bound to
+`127.0.0.1:3307` by default, and phpMyAdmin is restricted to local access.
 
 Clicking the Control Panel's **X** button hides it in the Windows notification
 area and leaves its services running. Choose **Open PHP Windows DevStack** to
@@ -258,9 +266,12 @@ DevStack preserves those values.
 
 ## Network security
 
-The development services are local-only by default. See
-[`SECURITY.md`](SECURITY.md) and [`docs/architecture.md`](docs/architecture.md)
-before changing listener addresses or distributing a build.
+Apache serves the web root to LAN clients by default; MariaDB and phpMyAdmin
+remain local-only. Use DevStack only on a trusted private network, allow inbound
+Apache traffic only on the Windows Private profile, and do not expose the stack
+to the public internet. See [`SECURITY.md`](SECURITY.md) and
+[`docs/architecture.md`](docs/architecture.md) before changing listener
+addresses or distributing a build.
 
 ## License
 
