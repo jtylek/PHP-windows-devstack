@@ -106,6 +106,8 @@ clients on the configured HTTP port. Find the PC's private IPv4 address with
 selected Apache port on the Private network profile. Do not expose it through a
 Public profile or router port forwarding. MariaDB remains bound to
 `127.0.0.1:3307` by default, and phpMyAdmin is restricted to local access.
+An update migrates the stock Apache loopback-only directives to these LAN
+defaults while preserving customized listen addresses and access rules.
 
 Clicking the Control Panel's **X** button hides it in the Windows notification
 area and leaves its services running. Choose **Open PHP Windows DevStack** to
