@@ -1,5 +1,5 @@
 ServerRoot "{{APACHE_ROOT}}"
-Listen 127.0.0.1:{{HTTP_PORT}}
+Listen {{HTTP_PORT}}
 ServerName localhost:{{HTTP_PORT}}
 
 LoadModule authz_core_module modules/mod_authz_core.so
@@ -19,7 +19,7 @@ DocumentRoot "{{WWW_ROOT}}"
 <Directory "{{WWW_ROOT}}">
     Options Indexes FollowSymLinks
     AllowOverride All
-    Require local
+    Require all granted
 </Directory>
 
 # Never serve .htaccess/.htpasswd (as Apache's stock httpd.conf does)
