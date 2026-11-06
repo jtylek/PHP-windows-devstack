@@ -136,6 +136,23 @@ function Add-ApacheHtAccessDeny {
     [IO.File]::WriteAllText($template, $httpd.TrimEnd() + $newline + $newline + $rule + $newline, [Text.UTF8Encoding]::new($false))
 }
 
+function Set-ApacheLanDefaults {
+    param([Parameter(Mandatory)][string]$InstallRoot)
+
+    # Migrate only the stock loopback-only directives. User-customized
+    # addresses and access rules remain untouched.
+    $template = Join-Path $InstallRoot 'runtime/templates/httpd.conf.template'
+    if (-not (Test-Path -LiteralPath $template)) { return }
+    $httpd = [IO.File]::ReadAllText($template)
+    $updated = $httpd.Replace('Listen 127.0.0.1:{{HTTP_PORT}}', 'Listen {{HTTP_PORT}}')
+    $webRootToken = [regex]::Escape('{{WWW_ROOT}}')
+    $webRootPattern = '(?s)(<Directory "' + $webRootToken + '">(?:(?!</Directory>).)*?    )Require local(\r?\n</Directory>)'
+    $updated = [regex]::Replace($updated, $webRootPattern, '$1Require all granted$2')
+    if ($updated -cne $httpd) {
+        [IO.File]::WriteAllText($template, $updated, [Text.UTF8Encoding]::new($false))
+    }
+}
+
 function Initialize-PhpMyAdminStorage {
     param(
         [Parameter(Mandatory)][string]$InstallRoot,
@@ -270,6 +287,7 @@ Write-ProgressState -Completed 4 -Total 7 -Message 'PHP CA certificate bundle is
 $phpMyAdminRoot = Join-Path $installFullPath 'phpmyadmin'
 Disable-PhpMyAdminSignon -InstallRoot $installFullPath -PhpMyAdminRoot $phpMyAdminRoot
 Add-ApacheHtAccessDeny -InstallRoot $installFullPath
+Set-ApacheLanDefaults -InstallRoot $installFullPath
 if ($existingDatabase) {
     if (-not (Test-Path -LiteralPath (Join-Path $phpMyAdminRoot 'config.inc.php'))) {
         throw 'Existing phpMyAdmin configuration is missing. Restore it from the pre-update backup; setup will not reset passwords or database contents.'

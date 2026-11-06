@@ -48,7 +48,10 @@ try {
     # Simulate a user's old template and hand-added HTTPS configuration.
     [IO.File]::WriteAllText("$root\runtime\templates\mariadb.ini.template", "[mariadbd]`r`nbasedir=`"{{MARIADB_ROOT}}`"`r`ndatadir=`"{{MARIADB_DATA_ROOT}}`"`r`nport={{MARIADB_PORT}}`r`nbind-address=127.0.0.1`r`n[client]`r`nport={{MARIADB_PORT}}`r`n")
     # A template from before the .ht* deny rule existed: upgrade must add it back.
-    $oldHttpd = [regex]::Replace([IO.File]::ReadAllText("$root\runtime\templates\httpd.conf.template"), '(?m)^# Never serve \.htaccess[^\r\n]*\r?\n<Files "\.ht\*">\r?\n[^\r\n]*\r?\n</Files>\r?\n?', '')
+    $oldHttpd = [IO.File]::ReadAllText("$root\runtime\templates\httpd.conf.template")
+    $oldHttpd = $oldHttpd.Replace('Listen {{HTTP_PORT}}', 'Listen 127.0.0.1:{{HTTP_PORT}}')
+    $oldHttpd = $oldHttpd.Replace('    Require all granted', '    Require local')
+    $oldHttpd = [regex]::Replace($oldHttpd, '(?m)^# Never serve \.htaccess[^\r\n]*\r?\n<Files "\.ht\*">\r?\n[^\r\n]*\r?\n</Files>\r?\n?', '')
     [IO.File]::WriteAllText("$root\runtime\templates\httpd.conf.template", $oldHttpd)
     Add-Content "$root\runtime\templates\httpd.conf.template" '# custom HTTPS include preserved'
     [IO.Directory]::CreateDirectory("$root\data\config") | Out-Null
@@ -116,6 +119,9 @@ openssl.cafile="$customCaPath"
     if (Test-Path "$root\runtime\internal\phpmyadmin-signon.php") { throw 'Legacy phpMyAdmin sign-on endpoint was not removed.' }
     $httpdTemplate = Get-Content "$root\runtime\templates\httpd.conf.template" -Raw
     if ($httpdTemplate -notmatch 'custom HTTPS include preserved' -or $httpdTemplate -match '_devstack|PHPDevStack phpMyAdmin local sign-on') { throw 'Legacy Apache sign-on rule was not removed or custom configuration was lost.' }
+    if ($httpdTemplate -notmatch '(?m)^Listen \{\{HTTP_PORT\}\}$') { throw 'Upgrade did not migrate Apache to listen on all interfaces.' }
+    if ($httpdTemplate -notmatch '(?s)<Directory "\{\{WWW_ROOT\}\}">(?:(?!</Directory>).)*?Require all granted(?:(?!</Directory>).)*?</Directory>') { throw 'Upgrade did not allow LAN clients to access the web root.' }
+    if ($httpdTemplate -notmatch '(?s)<Directory "\{\{PHPMYADMIN_ROOT\}\}">(?:(?!</Directory>).)*?Require local(?:(?!</Directory>).)*?</Directory>') { throw 'Upgrade must keep phpMyAdmin local-only.' }
     if ([regex]::Matches($httpdTemplate, '(?m)^<Files "\.ht\*">').Count -ne 1) { throw 'Upgrade did not add exactly one .ht* deny rule to the Apache template.' }
     Start-TestDatabase
     $value = & $client "--defaults-extra-file=$clientIni" --protocol=tcp --host=127.0.0.1 "--port=$port" --user=root --batch --skip-column-names -e 'SELECT value FROM upgrade_sentinel.keep_me'
@@ -125,6 +131,10 @@ openssl.cafile="$customCaPath"
     # Exercise the actual generated configuration and slow log, not just template text.
     dotnet run --project (Join-Path (Split-Path -Parent $PSScriptRoot) 'tests/DevStack.TerminalChecks/DevStack.TerminalChecks.csproj') -- --render $root
     if ($LASTEXITCODE -ne 0) { throw 'Could not render installed configuration.' }
+    $httpdConfig = Get-Content "$root\runtime\config\generated\httpd.conf" -Raw
+    if ($httpdConfig -notmatch '(?m)^Listen 8088$') { throw 'Generated Apache config does not listen on the configured port across interfaces.' }
+    if ($httpdConfig -notmatch '(?s)<Directory "[^"]*www">(?:(?!</Directory>).)*?Require all granted(?:(?!</Directory>).)*?</Directory>') { throw 'Generated Apache config does not permit LAN clients to access the web root.' }
+    if ($httpdConfig -notmatch '(?s)<Directory "[^"]*phpmyadmin">(?:(?!</Directory>).)*?Require local(?:(?!</Directory>).)*?</Directory>') { throw 'Generated Apache config does not keep phpMyAdmin local-only.' }
     $phpIni = Get-Content "$root\runtime\config\generated\php.ini" -Raw
     foreach ($setting in @("curl.cainfo=`"$customCaPath`"", "openssl.cafile=`"$customCaPath`"")) {
         if (-not $phpIni.Contains($setting)) { throw "Custom CA setting was not preserved: $setting" }
