@@ -28,7 +28,6 @@ concurrency:
 
 env:
   RELEASE_TAG: v1.0.0-rc.13
-  APACHE_ARTIFACT_ID: "11881045146"
   APACHE_SHA256: 10b310843c4763d7efa2c04d3e474c35bb9dee927babb5a167cbebd1545eff3f
 
 jobs:
@@ -48,8 +47,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           New-Item -ItemType Directory -Path artifacts/apache-release -Force | Out-Null
-          gh api "repos/${{ github.repository }}/actions/artifacts/$env:APACHE_ARTIFACT_ID/zip" > artifacts/apache-artifact.zip
-          Expand-Archive artifacts/apache-artifact.zip artifacts/apache-release
+          gh release download $env:RELEASE_TAG --repo "${{ github.repository }}" --pattern 'apache-httpd-2.4.69-win64-vs17*' --dir artifacts/apache-release
           $archive = 'artifacts/apache-release/apache-httpd-2.4.69-win64-vs17.zip'
           $actual = (Get-FileHash $archive -Algorithm SHA256).Hash.ToLowerInvariant()
           if ($actual -cne $env:APACHE_SHA256) {
