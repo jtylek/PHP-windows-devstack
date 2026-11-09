@@ -12,8 +12,9 @@ behind a small desktop control panel. No Docker required.
 **[Download the latest Windows installer](https://github.com/jtylek/PHP-windows-devstack/releases)**
 (Windows 10/11 x64). Run the setup EXE; the default folder is `C:\PHPDevStack`.
 
-> Project status: unsigned release candidate for testing; not for production use.
-> Windows SmartScreen may show an unknown-publisher warning.
+> Project status: ready for development use on a local or trusted private network; not
+> for production hosting. The installer is unsigned, so Windows SmartScreen may show an
+> unknown-publisher warning.
 
 ## Defaults
 
