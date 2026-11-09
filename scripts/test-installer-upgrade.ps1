@@ -128,7 +128,7 @@ openssl.cafile="$customCaPath"
     if (Test-Path "$root\runtime\internal\phpmyadmin-signon.php") { throw 'Legacy phpMyAdmin sign-on endpoint was not removed.' }
     $httpdTemplate = Get-Content "$root\runtime\templates\httpd.conf.template" -Raw
     if ($httpdTemplate -notmatch 'custom HTTPS include preserved' -or $httpdTemplate -match '_devstack|PHPDevStack phpMyAdmin local sign-on') { throw 'Legacy Apache sign-on rule was not removed or custom configuration was lost.' }
-    if ($httpdTemplate -notmatch '(?m)^Listen \{\{HTTP_PORT\}\}$') { throw 'Upgrade did not migrate Apache to listen on all interfaces.' }
+    if ($httpdTemplate -notmatch '(?m)^Listen \{\{HTTP_PORT\}\}\r?$') { throw 'Upgrade did not migrate Apache to listen on all interfaces.' }
     if ($httpdTemplate -notmatch '(?s)<Directory "\{\{WWW_ROOT\}\}">(?:(?!</Directory>).)*?Require all granted(?:(?!</Directory>).)*?</Directory>') { throw 'Upgrade did not allow LAN clients to access the web root.' }
     if ($httpdTemplate -notmatch '(?s)<Directory "\{\{PHPMYADMIN_ROOT\}\}">(?:(?!</Directory>).)*?Require local(?:(?!</Directory>).)*?</Directory>') { throw 'Upgrade must keep phpMyAdmin local-only.' }
     if ([regex]::Matches($httpdTemplate, '(?m)^<Files "\.ht\*">').Count -ne 1) { throw 'Upgrade did not add exactly one .ht* deny rule to the Apache template.' }
@@ -141,7 +141,7 @@ openssl.cafile="$customCaPath"
     dotnet run --project (Join-Path (Split-Path -Parent $PSScriptRoot) 'tests/DevStack.TerminalChecks/DevStack.TerminalChecks.csproj') -- --render $root
     if ($LASTEXITCODE -ne 0) { throw 'Could not render installed configuration.' }
     $httpdConfig = Get-Content "$root\runtime\config\generated\httpd.conf" -Raw
-    if ($httpdConfig -notmatch '(?m)^Listen 8088$') { throw 'Generated Apache config does not listen on the configured port across interfaces.' }
+    if ($httpdConfig -notmatch '(?m)^Listen 8088\r?$') { throw 'Generated Apache config does not listen on the configured port across interfaces.' }
     if ($httpdConfig -notmatch '(?s)<Directory "[^"]*www">(?:(?!</Directory>).)*?Require all granted(?:(?!</Directory>).)*?</Directory>') { throw 'Generated Apache config does not permit LAN clients to access the web root.' }
     if ($httpdConfig -notmatch '(?s)<Directory "[^"]*phpmyadmin">(?:(?!</Directory>).)*?Require local(?:(?!</Directory>).)*?</Directory>') { throw 'Generated Apache config does not keep phpMyAdmin local-only.' }
     $phpIni = Get-Content "$root\runtime\config\generated\php.ini" -Raw
