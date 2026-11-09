@@ -161,9 +161,12 @@ public sealed class ManagedProcess(string name) : IDisposable
             return;
         }
 
-        processes.Add(process);
+        // Enabling exit notifications can fail if the process exits while
+        // Refresh is attaching. Do not retain that candidate: Refresh disposes
+        // failed candidates, and a disposed entry breaks later shutdown checks.
         process.EnableRaisingEvents = true;
         process.Exited += (_, _) => Exited?.Invoke(this, EventArgs.Empty);
+        processes.Add(process);
     }
 
     private void RemoveExitedProcesses()

@@ -60,6 +60,15 @@ try
         await reconnected.StopAsync();
     }
     Check(!service.IsRunning, "Stopped process is still reported as running.");
+    // Repeated discovery during exit exercises short-lived process races on CI.
+    for (var attempt = 0; attempt < 5; attempt++)
+    {
+        await service.StartAsync();
+        using var reconnected = new MailpitService(paths);
+        Check(reconnected.IsRunning, "Reconnect lost the running process.");
+        await reconnected.StopAsync();
+        Check(!service.IsRunning, "Exited process was retained after reconnect/stop.");
+    }
     Check(Environment.GetEnvironmentVariable("MP_SMTP_RELAY_CONFIG")!.EndsWith("nonexistent-relay.yml"),
         "Starting Mailpit mutated the parent environment.");
     Console.WriteLine("Mailpit capture, persistence, port conflicts, environment isolation and process detection passed.");
