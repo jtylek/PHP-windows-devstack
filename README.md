@@ -9,8 +9,8 @@ behind a small desktop control panel. No Docker required.
 
 ## Download for Windows
 
-**[Download the latest Windows installer](https://github.com/jtylek/PHP-windows-devstack/releases)**
-(Windows 10/11 x64). Run the setup EXE; the default folder is `C:\PHPDevStack`.
+**[Download the latest release: 1.0 RC14](https://github.com/jtylek/PHP-windows-devstack/releases/tag/v1.0.0-rc.14)**
+(Windows 10/11 x64; all versions are on the [Releases page](https://github.com/jtylek/PHP-windows-devstack/releases)). Run the setup EXE; the default folder is `C:\PHPDevStack`.
 
 > Project status: ready for development use on a local or trusted private network; not
 > for production hosting. The installer is unsigned, so Windows SmartScreen may show an
