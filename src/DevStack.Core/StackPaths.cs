@@ -8,6 +8,7 @@ public sealed record StackPaths(string Root)
     public string PhpRoot => Path.Combine(RuntimeRoot, "php");
     public string CaBundlePath => Path.Combine(RuntimeRoot, "certificates", "cacert.pem");
     public string MariaDbRoot => Path.Combine(RuntimeRoot, "mariadb");
+    public string MailpitRoot => Path.Combine(RuntimeRoot, "mailpit");
     public string TemplateRoot => Path.Combine(RuntimeRoot, "templates");
     public string GeneratedConfigRoot => Path.Combine(RuntimeRoot, "config", "generated");
     public string DataRoot => Path.Combine(Root, "data");

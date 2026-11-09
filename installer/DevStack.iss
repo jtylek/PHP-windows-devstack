@@ -1,5 +1,5 @@
 #define MyAppName "PHP Windows DevStack"
-#define MyAppVersion "1.0.0-rc.13"
+#define MyAppVersion "1.0.0-rc.14"
 #define MyAppPublisher "PHP Windows DevStack"
 #define MyAppExeName "DevStack.ControlPanel.exe"
 
@@ -23,10 +23,10 @@ DisableWelcomePage=no
 SetupLogging=yes
 CloseApplications=no
 UninstallDisplayIcon={app}\{#MyAppExeName}
-VersionInfoVersion=1.0.0.13
+VersionInfoVersion=1.0.0.14
 VersionInfoDescription=PHP Windows DevStack online installer
 VersionInfoProductName=PHP Windows DevStack
-VersionInfoProductVersion=1.0.0.13
+VersionInfoProductVersion=1.0.0.14
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
@@ -63,6 +63,7 @@ Filename: "{app}\{#MyAppExeName}"; Description: "Launch PHP Windows DevStack"; F
 Type: filesandordirs; Name: "{app}\runtime\apache"
 Type: filesandordirs; Name: "{app}\runtime\php"
 Type: filesandordirs; Name: "{app}\runtime\mariadb"
+Type: filesandordirs; Name: "{app}\runtime\mailpit"
 Type: filesandordirs; Name: "{app}\runtime\certificates"
 Type: files; Name: "{app}\.devstack-ready"
 Type: files; Name: "{app}\setup-progress.txt"
@@ -213,13 +214,13 @@ begin
   UpgradeMinimizeButton.OnClick := @MinimizeUpgradeProgress;
   WizardForm.WelcomeLabel2.Caption :=
     'PHP Windows DevStack is a native, portable Windows development environment for PHP applications.' + #13#10#13#10 +
-    'Apache HTTP Server, PHP 8.5 and MariaDB with a desktop control panel will be installed.';
+    'Apache HTTP Server, PHP 8.5, MariaDB and Mailpit with a desktop control panel will be installed.';
   WizardForm.WelcomeLabel2.AutoSize := False;
   WizardForm.WelcomeLabel2.Width := WizardForm.WelcomeLabel2.Parent.ClientWidth - WizardForm.WelcomeLabel2.Left - 24;
 end;
 
 const
-  RUNTIME_PROGRESS_TOTAL = 7;
+  RUNTIME_PROGRESS_TOTAL = 8;
 
 procedure RuntimeSetupLog(const S: String; const Error, FirstLine: Boolean);
 var
@@ -230,18 +231,22 @@ begin
     exit;
 
   WizardForm.StatusLabel.Caption := MessageText;
-  if Pos('[1/4]', MessageText) > 0 then
+  if Pos('[1/5]', MessageText) > 0 then
     WizardForm.ProgressGauge.Position := 0
-  else if Pos('[2/4]', MessageText) > 0 then
+  else if Pos('[2/5]', MessageText) > 0 then
     WizardForm.ProgressGauge.Position := 1
-  else if Pos('[3/4]', MessageText) > 0 then
+  else if Pos('[3/5]', MessageText) > 0 then
     WizardForm.ProgressGauge.Position := 2
-  else if Pos('[4/4]', MessageText) > 0 then
+  else if Pos('[4/5]', MessageText) > 0 then
     WizardForm.ProgressGauge.Position := 3
-  else if Pos('Initializing the local MariaDB', MessageText) > 0 then
+  else if Pos('[5/5]', MessageText) > 0 then
+    WizardForm.ProgressGauge.Position := 4
+  else if Pos('[6/6]', MessageText) > 0 then
     WizardForm.ProgressGauge.Position := 5
-  else if Pos('Finalizing runtime setup', MessageText) > 0 then
+  else if Pos('Initializing the local MariaDB', MessageText) > 0 then
     WizardForm.ProgressGauge.Position := 6
+  else if Pos('Finalizing runtime setup', MessageText) > 0 then
+    WizardForm.ProgressGauge.Position := 7
   else if Pos('DevStack runtime setup completed', MessageText) > 0 then
     WizardForm.ProgressGauge.Position := RUNTIME_PROGRESS_TOTAL;
   WizardForm.Refresh;

@@ -1,6 +1,6 @@
 [CmdletBinding(SupportsShouldProcess)]
 param(
-    [ValidateSet('all', 'apache', 'php', 'mariadb', 'phpmyadmin')]
+    [ValidateSet('all', 'apache', 'php', 'mariadb', 'mailpit', 'phpmyadmin')]
     [string]$Component = 'all',
 
     [string]$ManifestPath = (Join-Path (Split-Path -Parent $PSScriptRoot) 'runtime/manifest/components.json'),

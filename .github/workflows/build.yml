@@ -22,3 +22,10 @@ jobs:
       - name: Check PHP terminal configuration
         shell: pwsh
         run: dotnet run --project tests/DevStack.TerminalChecks/DevStack.TerminalChecks.csproj
+      - name: Check native Mailpit integration
+        shell: powershell
+        run: |
+          $runtimeRoot = Join-Path $env:RUNNER_TEMP 'devstack-mailpit-runtime'
+          ./scripts/install-runtime.ps1 -Component mailpit -DestinationRoot $runtimeRoot
+          dotnet run --project tests/DevStack.MailpitChecks/DevStack.MailpitChecks.csproj -- (Join-Path $runtimeRoot 'mailpit')
+          if ($LASTEXITCODE -ne 0) { throw 'Mailpit integration checks failed.' }

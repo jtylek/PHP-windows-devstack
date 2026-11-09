@@ -225,7 +225,7 @@ $runtimeRoot = Join-Path $installFullPath 'runtime'
 $manifestPath = Join-Path $runtimeRoot 'manifest/components.json'
 $installer = Join-Path $PSScriptRoot 'install-runtime.ps1'
 $existingDatabase = Test-Path -LiteralPath (Join-Path $installFullPath 'data/mariadb/mysql') -PathType Container
-Write-ProgressState -Completed 0 -Total 7 -Message 'Preparing runtime downloads...'
+Write-ProgressState -Completed 0 -Total 8 -Message 'Preparing runtime downloads...'
 
 function Remove-OptionalRuntimeFiles {
     param([Parameter(Mandatory)][string]$Root)
@@ -266,23 +266,23 @@ function Remove-OptionalRuntimeFiles {
     }
 }
 
-Write-Host 'Downloading and verifying Apache, PHP and MariaDB...'
-$components = @('apache', 'php', 'mariadb')
+Write-Host 'Downloading and verifying Apache, PHP, MariaDB and Mailpit...'
+$components = @('apache', 'php', 'mariadb', 'mailpit')
 for ($index = 0; $index -lt $components.Count; $index++) {
     $component = $components[$index]
-    Write-Host "[$($index + 1)/4] Preparing $component..."
-    Write-ProgressState -Completed $index -Total 7 -Message "Downloading and verifying $component..."
+    Write-Host "[$($index + 1)/5] Preparing $component..."
+    Write-ProgressState -Completed $index -Total 8 -Message "Downloading and verifying $component..."
     & $installer -Component $component -ManifestPath $manifestPath -DestinationRoot $runtimeRoot -Force
-    Write-ProgressState -Completed ($index + 1) -Total 7 -Message "$component is ready."
+    Write-ProgressState -Completed ($index + 1) -Total 8 -Message "$component is ready."
 }
-Write-Host '[4/4] Preparing phpMyAdmin...'
-Write-ProgressState -Completed 3 -Total 7 -Message 'Downloading and verifying phpMyAdmin...'
+Write-Host '[5/5] Preparing phpMyAdmin...'
+Write-ProgressState -Completed 4 -Total 8 -Message 'Downloading and verifying phpMyAdmin...'
 & $installer -Component phpmyadmin -ManifestPath $manifestPath -DestinationRoot $installFullPath -Force
-Write-ProgressState -Completed 4 -Total 7 -Message 'phpMyAdmin is ready.'
-Write-Host '[5/5] Refreshing the PHP Mozilla CA certificate bundle...'
-Write-ProgressState -Completed 4 -Total 7 -Message 'Downloading and verifying PHP CA certificate bundle...'
+Write-ProgressState -Completed 5 -Total 8 -Message 'phpMyAdmin is ready.'
+Write-Host '[6/6] Refreshing the PHP Mozilla CA certificate bundle...'
+Write-ProgressState -Completed 5 -Total 8 -Message 'Downloading and verifying PHP CA certificate bundle...'
 & (Join-Path $PSScriptRoot 'refresh-ca-bundle.ps1') -InstallRoot $installFullPath
-Write-ProgressState -Completed 4 -Total 7 -Message 'PHP CA certificate bundle is ready.'
+Write-ProgressState -Completed 5 -Total 8 -Message 'PHP CA certificate bundle is ready.'
 
 $phpMyAdminRoot = Join-Path $installFullPath 'phpmyadmin'
 Disable-PhpMyAdminSignon -InstallRoot $installFullPath -PhpMyAdminRoot $phpMyAdminRoot
@@ -294,7 +294,7 @@ if ($existingDatabase) {
     }
     & (Join-Path $PSScriptRoot 'merge-mariadb-template.ps1') -InstallRoot $installFullPath
     Write-Host 'Existing databases, passwords, phpMyAdmin configuration and user settings preserved. Database initialization skipped.'
-    Write-ProgressState -Completed 7 -Total 7 -Message 'Update complete; existing data preserved.'
+    Write-ProgressState -Completed 8 -Total 8 -Message 'Update complete; existing data preserved.'
     'ready' | Set-Content -LiteralPath (Join-Path $installFullPath '.devstack-ready') -Encoding ascii
     Write-Host 'DevStack runtime setup completed.'
     return
@@ -324,7 +324,7 @@ Set-Content -LiteralPath (Join-Path $phpMyAdminRoot 'config.inc.php') -Value $ph
 $dataDirectory = Join-Path $installFullPath 'data/mariadb'
 $systemDatabase = Join-Path $dataDirectory 'mysql'
 if (-not (Test-Path -LiteralPath $systemDatabase -PathType Container)) {
-    Write-ProgressState -Completed 5 -Total 7 -Message 'Initializing MariaDB...'
+    Write-ProgressState -Completed 6 -Total 8 -Message 'Initializing MariaDB...'
     [System.IO.Directory]::CreateDirectory($dataDirectory) | Out-Null
 
     $randomBytes = New-Object byte[] 24
@@ -392,16 +392,16 @@ $rootPassword = $null
 
 Remove-OptionalRuntimeFiles -Root $installFullPath
 Write-Host 'Finalizing runtime setup...'
-Write-ProgressState -Completed 6 -Total 7 -Message 'Finalizing DevStack...'
+Write-ProgressState -Completed 7 -Total 8 -Message 'Finalizing DevStack...'
 
 'ready' | Set-Content -LiteralPath (Join-Path $installFullPath '.devstack-ready') -Encoding ascii
-Write-ProgressState -Completed 7 -Total 7 -Message 'DevStack is ready.'
+Write-ProgressState -Completed 8 -Total 8 -Message 'DevStack is ready.'
 Write-Host 'DevStack runtime setup completed.'
 }
 catch {
     Write-Host "ERROR: $($_.Exception.Message)"
     Write-Host 'Runtime setup failed. Review setup-runtime.log for the complete error.'
-    Write-ProgressState -Completed 0 -Total 7 -Message "Setup failed: $($_.Exception.Message)"
+    Write-ProgressState -Completed 0 -Total 8 -Message "Setup failed: $($_.Exception.Message)"
     throw
 }
 finally {

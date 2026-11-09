@@ -94,6 +94,13 @@ openssl.cafile="$customCaPath"
         'runtime/mariadb/.devstack-receipt.json','phpmyadmin/.devstack-receipt.json')
     $hashes = @{}
     foreach ($path in $protectedPaths) { $hashes[$path] = (Get-FileHash -LiteralPath (Join-Path $root $path)).Hash }
+    # Model an older installation without Mailpit. Move only its replaceable
+    # runtime outside the install tree; preserve all captured messages.
+    $mailpitRuntime = Join-Path $root 'runtime/mailpit'
+    if ([IO.Path]::GetFullPath($mailpitRuntime) -ne "$root\runtime\mailpit") { throw 'Unexpected Mailpit runtime path.' }
+    Move-Item -LiteralPath $mailpitRuntime -Destination (Join-Path $scratch 'previous-mailpit')
+    [IO.Directory]::CreateDirectory("$root\data\smtp") | Out-Null
+    [IO.File]::WriteAllText("$root\data\smtp\legacy.eml", 'legacy SMTP capture sentinel')
     $setup = Start-Process $SetupPath -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART',"/DIR=$root", "/LOG=$scratch\installer.log" -Wait -PassThru
     if ($setup.ExitCode -ne 0) {
         Get-Content "$scratch\installer.log"
@@ -105,6 +112,8 @@ openssl.cafile="$customCaPath"
     }
     $report = Get-Content "$root\logs\upgrade-report.txt" -Raw
     if ($report -notmatch 'Verified full backup:' -or ([regex]::Matches($report, 'Does not need updating - skipped')).Count -ne 4) { throw 'Missing backup/skip report.' }
+    if ($report -notmatch 'Mailpit: new component' -or -not (Test-Path -LiteralPath "$root\runtime\mailpit\mailpit.exe")) { throw 'Upgrade did not add Mailpit to the older installation.' }
+    if ((Get-Content -LiteralPath "$root\data\smtp\legacy.eml" -Raw) -ne 'legacy SMTP capture sentinel') { throw 'Upgrade changed legacy SMTP captures.' }
     if ($report -notmatch 'Preserved 1 symbolic link/junction as links') { throw 'Project junction was not reported.' }
     $backupPath = ([regex]::Match($report, '(?m)^Verified full backup:\s*(.+)$')).Groups[1].Value.Trim()
     if (-not $backupPath) { throw 'Could not determine the backup path.' }
@@ -156,6 +165,7 @@ openssl.cafile="$customCaPath"
     # A second update must build a complete snapshot while reusing unchanged
     # files from the first verified snapshot. Changed files are physically copied.
     [IO.File]::WriteAllText("$root\www\upgrade-project.txt", 'changed project sentinel')
+    $mailpitReceiptHash = (Get-FileHash -LiteralPath "$root\runtime\mailpit\.devstack-receipt.json").Hash
     $secondSetup = Start-Process $SetupPath -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART',"/DIR=$root", "/LOG=$scratch\installer-second.log" -Wait -PassThru
     if ($secondSetup.ExitCode -ne 0) {
         Get-Content "$scratch\installer-second.log"
@@ -163,6 +173,8 @@ openssl.cafile="$customCaPath"
         throw "Second in-place update failed: $($secondSetup.ExitCode)"
     }
     $secondReport = Get-Content "$root\logs\upgrade-report.txt" -Raw
+    if (([regex]::Matches($secondReport, 'Does not need updating - skipped')).Count -ne 5 -or
+        (Get-FileHash -LiteralPath "$root\runtime\mailpit\.devstack-receipt.json").Hash -ne $mailpitReceiptHash) { throw 'Second upgrade did not skip the installed Mailpit runtime.' }
     if ($secondReport -notmatch 'Incremental backup sync: kept \d+ unchanged files') { throw 'Second update did not report an incremental backup sync.' }
     $secondBackup = ([regex]::Match($secondReport, '(?m)^Verified full backup:\s*(.+)$')).Groups[1].Value.Trim()
     if (-not $secondBackup) { throw 'Could not determine the second backup path.' }

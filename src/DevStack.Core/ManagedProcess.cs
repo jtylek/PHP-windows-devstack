@@ -56,7 +56,7 @@ public sealed class ManagedProcess(string name) : IDisposable
         }
     }
 
-    public void Start(string executable, string arguments, string workingDirectory)
+    public void Start(string executable, string arguments, string workingDirectory, Action<ProcessStartInfo>? configure = null)
     {
         if (IsRunning)
         {
@@ -84,6 +84,7 @@ public sealed class ManagedProcess(string name) : IDisposable
             EnableRaisingEvents = true
         };
 
+        configure?.Invoke(process.StartInfo);
         process.OutputDataReceived += (_, eventArgs) => Forward(eventArgs.Data);
         process.ErrorDataReceived += (_, eventArgs) => Forward(eventArgs.Data);
         if (!process.Start())

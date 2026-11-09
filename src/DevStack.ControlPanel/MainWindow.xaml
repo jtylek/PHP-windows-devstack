@@ -64,7 +64,7 @@
             </Border>
             <Border Grid.Column="2" Background="White" CornerRadius="8" Padding="16" Margin="8,0,0,0">
                 <StackPanel>
-                    <TextBlock Text="SMTP Mail Capture" FontWeight="SemiBold" />
+                    <TextBlock Text="Mailpit" FontWeight="SemiBold" />
                     <TextBlock x:Name="SmtpCardStatus" Text="Stopped" Foreground="#B42318" Margin="0,6,0,0" />
                     <TextBlock Text="127.0.0.1:25" Foreground="#667085" Margin="0,2,0,0" />
                     <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
@@ -73,6 +73,9 @@
                         <Button x:Name="StopSmtpButton" Content="■  Stop" Padding="12,6"
                                 Click="StopSmtp_Click" />
                     </StackPanel>
+                    <Button x:Name="OpenMailpitButton" Content="Open Mailpit" Padding="12,6" Margin="0,8,0,0"
+                            HorizontalAlignment="Left" ToolTip="Open the mail inbox at http://127.0.0.1:8025/"
+                            Click="OpenMailpit_Click" />
                 </StackPanel>
             </Border>
         </Grid>
@@ -92,8 +95,6 @@
                     Click="OpcacheSettings_Click" />
             <Button Content="Port settings" Padding="18,9" Margin="8,0,0,0"
                     Click="PortsSettings_Click" />
-            <Button x:Name="SmtpCaptureButton" Content="SMTP Mail Capture" Padding="18,9" Margin="8,0,0,0"
-                    Click="SmtpCapture_Click" />
         </WrapPanel>
 
         <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right">

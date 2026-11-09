@@ -52,7 +52,7 @@ known workarounds change.
 
 - Apache: all interfaces, port `8080`; LAN access is subject to Windows Firewall.
 - MariaDB: `127.0.0.1:3307` (loopback-only).
-- SMTP capture: `127.0.0.1:25`.
+- Mailpit SMTP capture: `127.0.0.1:25`; web inbox: `http://127.0.0.1:8025/`.
 - phpMyAdmin: `http://127.0.0.1:8080/phpmyadmin` unless the Apache port is
   changed in the control panel.
 - MariaDB root password is generated during setup and stored encrypted with
@@ -169,12 +169,23 @@ known workarounds change.
 
 ### SMTP capture
 
-- SMTP capture is local-only, listens on port 25, stores messages under
-  `data/smtp`, and does not deliver mail.
-- Port 25 may already be occupied by another mail tool. Surface the bind error
-  clearly instead of silently retrying.
-- The capture window is modeless. Closing the main control panel must close the
-  capture window and stop the listener.
+- Mailpit 1.33.1 replaces the in-process SMTP listener and WPF capture window.
+  Setup installs the checksum-pinned native Windows x64 executable and MIT
+  license into `runtime/mailpit`; Docker is not required.
+- SMTP binds `127.0.0.1:25`, the web inbox binds `127.0.0.1:8025`, and captured
+  messages persist in `data/smtp/mailpit.db`. Automatic message-count pruning is
+  disabled. Preserve legacy `.eml` files; they are not automatically imported.
+- Clear inherited `MP_*` variables in the Mailpit child process so external
+  relay/forwarding settings cannot enable delivery. Do not modify global settings.
+- Report conflicts on either port clearly. Start waits for SMTP and HTTP
+  readiness. The panel has Start, Stop and Open Mailpit buttons; the last opens
+  the inbox in the default browser when running.
+- Start all/Stop all and Quit include Mailpit. Hiding to the tray leaves it
+  running. Reconnect only to this installation's executable path.
+- Upgrade preflight permits an entirely absent Mailpit directory on older
+  installations; a partial/unreceipted existing directory still blocks upgrades.
+- `tests/DevStack.MailpitChecks` exercises the real pinned binary, including
+  capture, persistence, conflicts, environment isolation and process detection.
 
 ### Control Panel lifetime and service detection
 
@@ -210,6 +221,10 @@ that case, do not claim a local build passed; the GitHub Actions results are the
 authoritative build verification. The CI build uses Windows and .NET 8.
 
 ## Publishing a new installer release
+
+- RC14 adds native Mailpit. The distribution workflow reuses the checksum-pinned
+  Apache payload from RC13 when preparing the new release. PHP 8.5.12 is now
+  downloaded from the official `releases/archives` path (same pinned hash).
 
 1. Make the code and documentation changes. Keep the install path and product
    name consistent across `README.md`, `installer/DevStack.iss`, UI text, and

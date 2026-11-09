@@ -69,6 +69,12 @@ try {
     foreach ($item in $manifest.components | Where-Object { $_.enabled }) {
         $componentRoot = if ($item.name -eq 'phpmyadmin') { Join-Path $root $item.targetDirectory } else { Join-Path "$root\runtime" $item.targetDirectory }
         $receiptPath = Join-Path $componentRoot '.devstack-receipt.json'
+        # Older releases used in-process SMTP. Only an entirely absent Mailpit
+        # directory is a new component; partial installations still block.
+        if ($item.name -eq 'mailpit' -and -not (Test-Path -LiteralPath $componentRoot)) {
+            $report += 'Mailpit: new component; install after backup.'
+            continue
+        }
         if (-not (Test-Path -LiteralPath $receiptPath)) { throw "Missing $($item.name) installation receipt. Update stopped; repair/identify this runtime before replacing it." }
         $receipt = Get-Content -LiteralPath $receiptPath -Raw | ConvertFrom-Json
         foreach ($file in $item.requiredFiles) {

@@ -18,10 +18,11 @@ public partial class MainWindow : Window
     private readonly PortSettingsManager portSettings;
     private readonly MariaDbPasswordManager passwordManager;
     private readonly PhpConfigurationManager phpConfiguration;
-    private readonly SmtpCaptureService smtpCapture;
-    private SmtpCaptureWindow? smtpCaptureWindow;
+    private readonly MailpitService smtpCapture;
+    private bool mailpitBusy;
     private readonly Forms.NotifyIcon trayIcon;
     private bool allowClose;
+    private bool quitting;
 
     public MainWindow()
     {
@@ -34,9 +35,9 @@ public partial class MainWindow : Window
         controller = new StackController(paths, options);
         passwordManager = new MariaDbPasswordManager(paths, options);
         phpConfiguration = new PhpConfigurationManager(paths);
-        smtpCapture = new SmtpCaptureService(paths.SmtpRoot);
-        smtpCapture.MessageCaptured += (_, path) => Dispatcher.Invoke(() => AppendLog($"SMTP message captured: {Path.GetFileName(path)}"));
-        smtpCapture.StatusChanged += (_, _) => Dispatcher.Invoke(UpdateStatus);
+        smtpCapture = new MailpitService(paths);
+        smtpCapture.OutputReceived += (_, line) => Dispatcher.BeginInvoke(new Action(() => AppendLog(line)));
+        smtpCapture.StatusChanged += (_, _) => Dispatcher.BeginInvoke(new Action(UpdateStatus));
         controller.OutputReceived += (_, line) => Dispatcher.Invoke(() => AppendLog(line));
         controller.StatusChanged += (_, _) => Dispatcher.Invoke(UpdateStatus);
         VersionSummary.Text = LoadVersionSummary(paths);
@@ -45,6 +46,8 @@ public partial class MainWindow : Window
             AppendLog("Detected an existing Apache process from this DevStack installation.");
         if (controller.IsMariaDbRunning)
             AppendLog("Detected an existing MariaDB process from this DevStack installation.");
+        if (smtpCapture.IsRunning)
+            AppendLog("Detected an existing Mailpit process from this DevStack installation.");
     }
 
     private Forms.NotifyIcon CreateTrayIcon()
@@ -75,7 +78,7 @@ public partial class MainWindow : Window
         trayIcon.Visible = true;
         Hide();
         trayIcon.BalloonTipTitle = "PHP Windows DevStack is still running";
-        trayIcon.BalloonTipText = "Apache and MariaDB keep running. Choose 'Quit and stop services' in the tray menu to stop them and exit.";
+        trayIcon.BalloonTipText = "Apache, MariaDB and Mailpit keep running. Choose 'Quit and stop services' in the tray menu to stop them and exit.";
         trayIcon.ShowBalloonTip(4000);
     }
 
@@ -119,11 +122,14 @@ public partial class MainWindow : Window
         }
     }
 
-    private void StartAll_Click(object sender, RoutedEventArgs e)
+    private async void StartAll_Click(object sender, RoutedEventArgs e)
     {
         try
         {
             controller.StartAll();
+            mailpitBusy = true;
+            UpdateStatus();
+            await smtpCapture.StartAsync();
             AppendLog("DevStack started.");
         }
         catch (Exception exception)
@@ -133,12 +139,14 @@ public partial class MainWindow : Window
         }
         finally
         {
+            mailpitBusy = false;
             UpdateStatus();
         }
     }
 
     private async void StopAll_Click(object sender, RoutedEventArgs e)
     {
+        mailpitBusy = true;
         StopButton.IsEnabled = false;
         StartButton.IsEnabled = false;
         StopApacheButton.IsEnabled = false;
@@ -199,21 +207,24 @@ public partial class MainWindow : Window
         }
         finally
         {
+            mailpitBusy = false;
             UpdateStatus();
         }
     }
 
     private async void Quit_Click(object sender, RoutedEventArgs e)
     {
-        QuitButton.IsEnabled = false;
-        StartButton.IsEnabled = false;
-        StopButton.IsEnabled = false;
+        if (quitting) return;
+        quitting = true;
+        UpdateStatus();
         try
         {
             if (controller.IsApacheRunning || controller.IsMariaDbRunning)
             {
                 await controller.StopAllAsync();
             }
+
+            await smtpCapture.StopAsync();
 
             allowClose = true;
             Close();
@@ -225,8 +236,11 @@ public partial class MainWindow : Window
         }
         finally
         {
-            UpdateStatus();
-            QuitButton.IsEnabled = true;
+            if (!allowClose)
+            {
+                quitting = false;
+                UpdateStatus();
+            }
         }
     }
 
@@ -446,47 +460,56 @@ public partial class MainWindow : Window
         }
     }
 
-    private void SmtpCapture_Click(object sender, RoutedEventArgs e)
-    {
-        if (smtpCaptureWindow is { IsVisible: true })
-        {
-            smtpCaptureWindow.Activate();
-            return;
-        }
-
-        smtpCaptureWindow = new SmtpCaptureWindow(smtpCapture) { Owner = this };
-        smtpCaptureWindow.Show();
-        UpdateStatus();
-    }
-
-    private void StartSmtp_Click(object sender, RoutedEventArgs e)
+    private void OpenMailpit_Click(object sender, RoutedEventArgs e)
     {
         try
         {
-            smtpCapture.Start();
-            AppendLog("SMTP capture started on 127.0.0.1:25.");
+            Process.Start(new ProcessStartInfo(MailpitService.InboxUrl) { UseShellExecute = true });
         }
         catch (Exception exception)
         {
-            AppendLog($"SMTP capture start failed: {exception.Message}");
-            MessageBox.Show(this, exception.Message, "SMTP capture could not start", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show(this, exception.Message, "Could not open Mailpit", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private async void StartSmtp_Click(object sender, RoutedEventArgs e)
+    {
+        mailpitBusy = true;
+        UpdateStatus();
+        try
+        {
+            await smtpCapture.StartAsync();
+            AppendLog("Mailpit started: SMTP 127.0.0.1:25; inbox http://127.0.0.1:8025/.");
+        }
+        catch (Exception exception)
+        {
+            AppendLog($"Mailpit start failed: {exception.Message}");
+            MessageBox.Show(this, exception.Message, "Mailpit could not start", MessageBoxButton.OK, MessageBoxImage.Error);
         }
         finally
         {
+            mailpitBusy = false;
             UpdateStatus();
         }
     }
 
     private async void StopSmtp_Click(object sender, RoutedEventArgs e)
     {
-        StopSmtpButton.IsEnabled = false;
+        mailpitBusy = true;
+        UpdateStatus();
         try
         {
             await smtpCapture.StopAsync();
-            AppendLog("SMTP capture stopped.");
+            AppendLog("Mailpit stopped.");
+        }
+        catch (Exception exception)
+        {
+            AppendLog($"Mailpit stop failed: {exception.Message}");
+            MessageBox.Show(this, exception.Message, "Mailpit could not stop", MessageBoxButton.OK, MessageBoxImage.Error);
         }
         finally
         {
+            mailpitBusy = false;
             UpdateStatus();
         }
     }
@@ -552,8 +575,8 @@ public partial class MainWindow : Window
     {
         SetStatus(ApacheStatus, controller.IsApacheRunning);
         SetStatus(MariaDbStatus, controller.IsMariaDbRunning);
-        StartButton.IsEnabled = !controller.IsApacheRunning || !controller.IsMariaDbRunning;
-        StopButton.IsEnabled = controller.IsApacheRunning || controller.IsMariaDbRunning;
+        StartButton.IsEnabled = !mailpitBusy && (!controller.IsApacheRunning || !controller.IsMariaDbRunning || !smtpCapture.IsRunning);
+        StopButton.IsEnabled = !mailpitBusy && (controller.IsApacheRunning || controller.IsMariaDbRunning || smtpCapture.IsRunning);
         StartApacheButton.IsEnabled = !controller.IsApacheRunning;
         StopApacheButton.IsEnabled = controller.IsApacheRunning;
         StartMariaDbButton.IsEnabled = !controller.IsMariaDbRunning;
@@ -564,8 +587,17 @@ public partial class MainWindow : Window
         ApacheEndpoint.Text = $"127.0.0.1:{options.HttpPort}";
         MariaDbEndpoint.Text = $"127.0.0.1:{options.MariaDbPort}";
         SetStatus(SmtpCardStatus, smtpCapture.IsRunning);
-        StartSmtpButton.IsEnabled = !smtpCapture.IsRunning;
-        StopSmtpButton.IsEnabled = smtpCapture.IsRunning;
+        StartSmtpButton.IsEnabled = !mailpitBusy && !smtpCapture.IsRunning;
+        StopSmtpButton.IsEnabled = !mailpitBusy && smtpCapture.IsRunning;
+        OpenMailpitButton.IsEnabled = !mailpitBusy && smtpCapture.IsRunning;
+        QuitButton.IsEnabled = !quitting;
+        if (quitting)
+        {
+            StartButton.IsEnabled = StopButton.IsEnabled = false;
+            StartApacheButton.IsEnabled = StopApacheButton.IsEnabled = false;
+            StartMariaDbButton.IsEnabled = StopMariaDbButton.IsEnabled = false;
+            StartSmtpButton.IsEnabled = StopSmtpButton.IsEnabled = OpenMailpitButton.IsEnabled = false;
+        }
     }
 
     private static void SetStatus(System.Windows.Controls.TextBlock label, bool running)
@@ -582,8 +614,7 @@ public partial class MainWindow : Window
 
     protected override void OnClosed(EventArgs e)
     {
-        smtpCaptureWindow?.Close();
-        smtpCapture.StopAsync().GetAwaiter().GetResult();
+        smtpCapture.Dispose();
         trayIcon.Visible = false;
         trayIcon.Dispose();
         controller.Dispose();

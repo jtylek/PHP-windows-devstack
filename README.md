@@ -1,7 +1,7 @@
 # PHP Windows DevStack
 
 PHP Windows DevStack is a native, portable Windows development environment for PHP
-applications. The runtime combines Apache HTTP Server, PHP 8.5 and MariaDB
+applications. The runtime combines Apache HTTP Server, PHP 8.5, MariaDB and Mailpit
 behind a small desktop control panel.
 
 > Project status: unsigned release candidate. The automated distribution is intended for
@@ -30,6 +30,7 @@ PHP Windows DevStack bundles PHP 8.5.12 Thread Safe x64. PHP 8.5.12 fixes the cr
 | HTTP server | Apache HTTP Server 2.4 |
 | PHP | PHP 8.5 x64 Thread Safe |
 | Database | MariaDB LTS x64 |
+| Mail capture | Mailpit 1.33.1 native Windows x64 |
 | Web root | `www/` |
 | HTTP access | Local: `http://127.0.0.1:8080`; LAN: `http://<PC-LAN-IP>:8080` |
 | Database endpoint | `127.0.0.1:3307` (local only) |
@@ -70,7 +71,7 @@ To validate the expected repository and package layout:
 
 ### Nontechnical Windows installation
 
-Download the [PHP Windows DevStack 1.0 RC13 installer](https://github.com/jtylek/PHP-windows-devstack/releases/download/v1.0.0-rc.13/PHP-Windows-DevStack-Setup-1.0.0-rc.13-win-x64.exe) and run it. The default installation directory is `C:\PHPDevStack`; installing there requires administrator
+Download the [PHP Windows DevStack 1.0 RC14 installer](https://github.com/jtylek/PHP-windows-devstack/releases/download/v1.0.0-rc.14/PHP-Windows-DevStack-Setup-1.0.0-rc.14-win-x64.exe) and run it. The default installation directory is `C:\PHPDevStack`; installing there requires administrator
 rights. It installs a self-contained control panel, downloads checksum-pinned
 Apache, PHP and MariaDB archives, initializes a local MariaDB instance, and
 creates shortcuts automatically.
@@ -120,7 +121,11 @@ program using the same port is not treated as a DevStack service.
 
 ### SMTP mail capture
 
-The control panel includes **SMTP Mail Capture** for local application troubleshooting. Start it from the control panel and configure Epesi or another application to use `127.0.0.1`, port `25`, without encryption or authentication. Messages are captured locally in `data\smtp` and can be viewed, exported as `.eml`, or deleted from the capture window. The listener binds only to localhost and does not deliver mail.
+The control panel manages **Mailpit**, a native Windows executable with an embedded web inbox; Docker is not required. Use its **Start** and **Stop** buttons, then **Open Mailpit** to open `http://127.0.0.1:8025/` in your default browser. The inbox button is enabled once Mailpit is running. **Start all**, **Stop all**, and **Quit and stop services** include Mailpit; hiding the panel to the tray leaves it running.
+
+Configure Epesi or another application to use SMTP host `127.0.0.1`, port `25`, without encryption or authentication. Both SMTP and the web inbox bind only to loopback. Mailpit captures mail without external delivery; DevStack clears inherited `MP_*` environment settings for its child process to prevent accidental relay/forwarding. Messages persist in `data\smtp\mailpit.db` across restarts, with automatic message-count deletion disabled. Delete unwanted mail through the web inbox. Existing capture `.eml` files remain in `data\smtp`; they are not automatically imported into Mailpit.
+
+Setup downloads and verifies the pinned Mailpit ZIP (about **11.19 MB**); its installed files add about **29.35 MB**, plus captured mail. The online setup EXE only gains the integration code and metadata. Port conflicts on SMTP `25` or inbox `8025` are reported when starting Mailpit.
 Changes are stored under `data/config` and only require restarting Apache;
 MariaDB is not restarted.
 

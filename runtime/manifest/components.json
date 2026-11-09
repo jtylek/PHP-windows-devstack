@@ -34,7 +34,7 @@
       "enabled": true,
       "archiveType": "zip",
       "sourcePage": "https://www.php.net/downloads.php?os=windows&version=8.5",
-      "archiveUrl": "https://downloads.php.net/~windows/releases/php-8.5.12-Win32-vs17-x64.zip",
+      "archiveUrl": "https://downloads.php.net/~windows/releases/archives/php-8.5.12-Win32-vs17-x64.zip",
       "sha256": "660f3ff6ccbdf60f9607ef54bdba85ee22a58d61fd3633b38a93d57fb7c3d184",
       "targetDirectory": "php",
       "stripTopDirectory": false,
@@ -69,6 +69,24 @@
         "bin/mariadb-install-db.exe"
       ],
       "status": "ready"
+    },
+    {
+      "name": "mailpit",
+      "displayName": "Mailpit",
+      "version": "1.33.1",
+      "platform": "windows",
+      "architecture": "x64",
+      "variant": "native",
+      "enabled": true,
+      "archiveType": "zip",
+      "sourcePage": "https://github.com/axllent/mailpit/releases/tag/v1.33.1",
+      "archiveUrl": "https://github.com/axllent/mailpit/releases/download/v1.33.1/mailpit-windows-amd64.zip",
+      "sha256": "0bcf8f1e7c21005b30c206064ff2f37dac602ef66774e558379d326f5673d652",
+      "targetDirectory": "mailpit",
+      "stripTopDirectory": false,
+      "requiredFiles": ["mailpit.exe", "LICENSE"],
+      "status": "ready",
+      "notes": "Native Windows executable with embedded web UI; MIT license."
     },
     {
       "name": "phpmyadmin",
