@@ -1,285 +1,36 @@
 # PHP Windows DevStack
 
-PHP Windows DevStack is a native, portable Windows development environment for PHP
-applications. The runtime combines Apache HTTP Server, PHP 8.5, MariaDB and Mailpit
-behind a small desktop control panel.
+A native, portable Windows development environment for PHP applications. It combines
+**Apache HTTP Server**, **PHP 8.5**, **MariaDB**, **phpMyAdmin** and
+**[Mailpit](https://github.com/axllent/mailpit)** (local mail capture with a web inbox)
+behind a small desktop control panel. No Docker required.
 
-> Project status: unsigned release candidate. The automated distribution is intended for
-> Windows 10/11 x64 testing and is not ready for production use.
+![PHP Windows DevStack control panel](docs/control-panel.png)
 
-## PHP security update
+## Download for Windows
 
-PHP Windows DevStack bundles PHP 8.5.12 Thread Safe x64. PHP 8.5.12 fixes the critical security vulnerabilities CVE-2026-109618 and CVE-2026-109619. The official Windows archive URL and its SHA-256 checksum are pinned in `runtime/manifest/components.json`; the installer verifies the checksum before extracting PHP.
+**[Download the latest Windows installer](https://github.com/jtylek/PHP-windows-devstack/releases)**
+(Windows 10/11 x64). Run the setup EXE; the default folder is `C:\PHPDevStack`.
 
-## Initial goals
+> Project status: unsigned release candidate for testing; not for production use.
+> Windows SmartScreen may show an unknown-publisher warning.
 
-- Run without administrator rights in portable mode.
-- Start and stop Apache and MariaDB from one control panel.
-- Generate relocatable configuration from templates.
-- Serve the `www/` web root to clients on the LAN; keep MariaDB bound to `127.0.0.1`.
-- Keep applications, database files and local settings outside replaceable
-  runtime directories.
-- Verify every downloaded runtime archive by SHA-256 before extraction.
-- Support safe, side-by-side runtime upgrades and rollback.
+## Defaults
 
-## Planned default stack
-
-| Component | Initial choice |
+| Service | Address |
 | --- | --- |
-| Control panel | .NET 8 WPF, self-contained x64 |
-| HTTP server | Apache HTTP Server 2.4 |
-| PHP | PHP 8.5 x64 Thread Safe |
-| Database | MariaDB LTS x64 |
-| Mail capture | Mailpit 1.33.1 native Windows x64 |
-| Web root | `www/` |
-| HTTP access | Local: `http://127.0.0.1:8080`; LAN: `http://<PC-LAN-IP>:8080` |
-| Database endpoint | `127.0.0.1:3307` (local only) |
+| Apache (web root `www/`) | `http://127.0.0.1:8080` |
+| phpMyAdmin | `http://127.0.0.1:8080/phpmyadmin` |
+| MariaDB | `127.0.0.1:3307` (local only) |
+| Mailpit SMTP / inbox | `127.0.0.1:25` / `http://127.0.0.1:8025` |
 
-## Repository layout
+## Documentation
 
-```text
-src/                  Control-panel and core source code
-runtime/manifest/     Pinned runtime component metadata
-runtime/templates/    Apache, PHP and MariaDB configuration templates
-scripts/              Build and package-validation scripts
-docs/                 Architecture and security decisions
-www/                  Default web root
-```
-
-Downloaded runtime files, database data and logs are intentionally ignored by
-Git.
-
-## Build
-
-Requirements:
-
-- Windows 10 or 11 x64
-- .NET 8 SDK
-- PowerShell 7 recommended
-
-```powershell
-./scripts/build.ps1
-```
-
-To validate the expected repository and package layout:
-
-```powershell
-./scripts/validate-layout.ps1
-```
-
-## Install the verified runtime
-
-### Nontechnical Windows installation
-
-Download the [PHP Windows DevStack 1.0 RC14 installer](https://github.com/jtylek/PHP-windows-devstack/releases/download/v1.0.0-rc.14/PHP-Windows-DevStack-Setup-1.0.0-rc.14-win-x64.exe) and run it. The default installation directory is `C:\PHPDevStack`; installing there requires administrator
-rights. It installs a self-contained control panel, downloads checksum-pinned
-Apache, PHP and MariaDB archives, initializes a local MariaDB instance, and
-creates shortcuts automatically.
-
-The release-candidate installer is not code-signed, so Windows SmartScreen may display an
-unknown-publisher warning. Published releases include a separate SHA-256 file.
-The setup window displays the runtime download, verification, database
-initialization and finalization phases while installation is running.
-
-### phpMyAdmin and databases
-
-After starting DevStack, open `http://127.0.0.1:8080/phpmyadmin`. Log in with
-username `root`. To display the generated root password for the current Windows
-user, run:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\show-database-password.ps1
-```
-
-When MariaDB is running, the DevStack control panel also provides **Set root
-password**. The new password must contain at least 8 characters.
-
-The control panel also provides **PHP extensions**, **OPcache settings**, and
-**Port settings**. OPcache is enabled for both web requests and CLI PHP by default;
-you can change its settings in the control panel. Apache defaults to port `8080` and MariaDB to `3307`; both
-can be changed to common ports such as `80` and `3306`. DevStack checks that a
-new port is available before saving it, and the services must be stopped before
-changing ports.
-
-Apache listens on all network interfaces and serves files from `www/` to LAN
-clients on the configured HTTP port. Find the PC's private IPv4 address with
-`ipconfig`, then open `http://<PC-LAN-IP>:8080` from another device (replace
-`8080` if you changed Apache's port). Windows Defender Firewall must allow the
-selected Apache port on the Private network profile. Do not expose it through a
-Public profile or router port forwarding. MariaDB remains bound to
-`127.0.0.1:3307` by default, and phpMyAdmin is restricted to local access.
-An update migrates the stock Apache loopback-only directives to these LAN
-defaults while preserving customized listen addresses and access rules.
-
-Clicking the Control Panel's **X** button hides it in the Windows notification
-area and leaves its services running. Choose **Open PHP Windows DevStack** to
-show it again, or **Quit and stop services** from the tray menu to stop Apache,
-MariaDB and SMTP capture before exiting. If the panel is closed unexpectedly,
-the next launch detects Apache and MariaDB processes by their executable paths
-and reconnects its status and stop controls to this installation. A different
-program using the same port is not treated as a DevStack service.
-
-### SMTP mail capture
-
-The control panel manages **Mailpit**, a native Windows executable with an embedded web inbox; Docker is not required. Use its **Start** and **Stop** buttons, then **Open Mailpit** to open `http://127.0.0.1:8025/` in your default browser. The inbox button is enabled once Mailpit is running. **Start all**, **Stop all**, and **Quit and stop services** include Mailpit; hiding the panel to the tray leaves it running.
-
-Configure Epesi or another application to use SMTP host `127.0.0.1`, port `25`, without encryption or authentication. Both SMTP and the web inbox bind only to loopback. Mailpit captures mail without external delivery; DevStack clears inherited `MP_*` environment settings for its child process to prevent accidental relay/forwarding. Messages persist in `data\smtp\mailpit.db` across restarts, with automatic message-count deletion disabled. Delete unwanted mail through the web inbox. Existing capture `.eml` files remain in `data\smtp`; they are not automatically imported into Mailpit.
-
-Setup downloads and verifies the pinned Mailpit ZIP (about **11.19 MB**); its installed files add about **29.35 MB**, plus captured mail. The online setup EXE only gains the integration code and metadata. Port conflicts on SMTP `25` or inbox `8025` are reported when starting Mailpit.
-Changes are stored under `data/config` and only require restarting Apache;
-MariaDB is not restarted.
-
-### Updating an existing installation (RC3 and later)
-
-Run the new installer **as the same Windows user** who originally installed
-PHPDevStack and select your existing folder, usually `C:\PHPDevStack`.
-First stop all services and close the control panel and PHP terminals. Do not
-uninstall the old version or delete `www` or `data`.
-
-Setup labels the operation **Update existing installation**. Before replacing
-files it checks runtime receipts, requires all processes from that folder to be
-stopped, verifies access to your encrypted password, and offers a checked-by-default
-safety-backup option. Setup estimates the data to copy and the final backup size,
-then warns that copying and verification can take a long time. Progress reports
-now cover scanning, preparing the copy plan, creating the backup directory tree,
-Robocopy batches, and verification. Cancel stops before setup replaces
-installation files. If you skip the backup,
-setup warns that it cannot restore the old installation if the update fails. The
-installer maintains one backup at `C:\PHPDevStack-backups\current`: the first
-backup without a previous completed snapshot makes a full copy, and later updates
-copy only changed files into that folder.
-After the new copy is verified, older timestamped backups made by previous releases
-are removed. An incomplete/unrecognized installation or a missing runtime
-receipt stops the update before files are replaced. Symbolic links and junctions
-are retained as links; their external targets are not followed into the backup
-and are not changed by setup.
-
-Existing `www`, databases, passwords, ports, PHP/MariaDB settings, phpMyAdmin
-configuration, and Apache/PHP templates are preserved. Missing MariaDB tuning
-defaults are added to its template; existing explicit values remain unchanged.
-An Apache template without the rule that blocks `.htaccess`/`.htpasswd`
-downloads gets it appended.
-Runtime versions are compared with the installer's pinned supported manifest:
-equal or newer installed versions display **Does not need updating - skipped**.
-This is not a query of arbitrary latest upstream releases. Cross-series MariaDB
-updates are blocked for a separate database migration. See
-`logs\upgrade-report.txt` and `logs\setup-runtime.log` for the results.
-
-The **Open phpMyAdmin** button opens phpMyAdmin in your default browser. Log in
-with username `root` and the generated MariaDB password shown above.
-
-If setup fails after replacing files, keep everything stopped. The verified
-backup contains the matching old binaries, templates and data together: rename
-the failed installation folder and copy the complete backup back to the original
-path. Do not restore individual InnoDB files over a running database. Backups
-include private data and are restricted to your Windows account and SYSTEM;
-keep them until you have checked your sites and databases. Automatic rollback
-and backup cleanup are not implemented.
-
-### Memory usage
-
-DevStack does not have a fixed memory footprint; usage depends on the active
-application and database workload. The SSD development profile reserves a
-RAM-sized InnoDB buffer pool (512 MiB on 8 GB, 1 GiB on 16 GB, capped at 2 GiB),
-plus other MariaDB buffers and per-connection memory.
-The old 180–350 MB idle-stack estimate does not apply to this profile.
-
-The PHP `memory_limit` and OPcache values are limits or cache capacity, not
-memory permanently allocated at startup. Database temporary-table limits are
-not a total memory cap: concurrent queries can allocate multiple buffers.
-Use **MariaDB → Memory settings** to override the automatic size on
-memory-constrained systems. Check available RAM when running
-another database stack alongside PHPDevStack.
-
-### MariaDB development tuning
-
-The persistent settings live in `runtime/templates/mariadb.ini.template`,
-not the generated `runtime/config/generated/mariadb.ini`. See
-[the MariaDB tuning specification](docs/mariadb-development-profile.md) for
-the values, safe application steps, verification query, and durability caveats.
-The slow query log is `logs/mariadb-slow.log` (queries taking over one second).
-The MariaDB card has **Error log** and **Slow log** buttons to open these files.
-
-In phpMyAdmin, open the **Databases** tab, enter a database name, and choose
-**Create**. phpMyAdmin is installed as the English-only stable 5.2.3 package;
-the installer verifies its SHA-256 checksum before extraction.
-
-### Developer installation
-
-The manifest pins Apache 2.4.69, PHP 8.5.12 Thread Safe x64 and MariaDB 11.8.9
-LTS for Windows. To download, verify and extract all packages:
-
-```powershell
-./scripts/install-runtime.ps1
-```
-
-The installer downloads only over HTTPS, verifies the exact SHA-256 before
-extraction, validates expected executable files and writes an installation
-receipt. Existing runtimes are not replaced unless `-Force` is supplied; when
-forced, the previous directory is moved under `runtime/.backup/`.
-
-Apache 2.4.69 source is pinned for provenance. Because Apache does not publish
-an official Windows binary, `.github/workflows/build-apache.yml` compiles it on
-a Windows Server 2022 runner using a pinned vcpkg revision. The verified build
-is published as a permanent project release asset for the online installer.
-
-To build the same artifact locally, use Visual Studio 2022 with C++ tools,
-CMake, Ninja, Git and PowerShell 7:
-
-```powershell
-./scripts/build-apache.ps1
-```
-
-For independent verification, an extracted Apache build artifact can still be
-installed into `runtime/apache` with:
-
-```powershell
-./scripts/install-apache-artifact.ps1 `
-  -ArchivePath ./apache-httpd-2.4.69-win64-vs17.zip `
-  -ChecksumPath ./apache-httpd-2.4.69-win64-vs17.zip.sha256
-```
-
-The Apache installer verifies the artifact checksum and expected runtime files.
-As with the other installer, replacement requires `-Force` and preserves the
-previous directory under `runtime/.backup/`.
-
-## PHP PowerShell terminal
-
-Click **Open PowerShell** in the control panel. It opens Windows PowerShell in
-`C:\PHPDevStack\runtime\php` (or the equivalent under your chosen install folder).
-The `php` command explicitly uses the bundled executable and
-`runtime\config\generated\php.ini`, regenerated from your PHP settings before
-the window opens. The terminal displays `php --ini` on startup for verification.
-You can change to your project directory and continue using the same PHP:
-
-```powershell
-cd C:\PHPDevStack\www\my-project
-php --ini
-php -m
-php artisan --version
-```
-
-The terminal's PATH and PHPRC apply only to this window and its child processes
-(including Composer); other terminals and Windows environment settings are not
-changed. PowerShell profiles are not loaded, preventing another profile from
-selecting a different PHP. Close and reopen the terminal after changing PHP
-settings. Additional CLI ini files, if needed, belong in `data\config\php-cli.d`.
-
-The installer downloads and SHA-256 verifies the current Mozilla CA bundle from the
-curl project into `runtime\certificates\cacert.pem` on fresh installs and updates.
-Generated PHP configuration points both cURL and OpenSSL at that bundle, so CLI
-scripts and the Apache PHP module can validate outgoing HTTPS. If you have set
-`curl.cainfo` or `openssl.cafile` yourself in `runtime\templates\php.ini.template`,
-DevStack preserves those values.
-
-## Network security
-
-Apache serves the web root to LAN clients by default; MariaDB and phpMyAdmin
-remain local-only. Use DevStack only on a trusted private network, allow inbound
-Apache traffic only on the Windows Private profile, and do not expose the stack
-to the public internet. See [`SECURITY.md`](SECURITY.md) and
-[`docs/architecture.md`](docs/architecture.md) before changing listener
-addresses or distributing a build.
+- [Installation and updating](docs/installation.md)
+- [Using DevStack](docs/usage.md): phpMyAdmin, ports, LAN access, mail capture, PHP terminal, memory
+- [Development](docs/development.md): stack details, build, runtime installation
+- [MariaDB development profile](docs/mariadb-development-profile.md)
+- [Architecture](docs/architecture.md) and [Security](SECURITY.md)
 
 ## License
 

@@ -244,17 +244,8 @@ public partial class MainWindow : Window
         }
     }
 
-    private void RepositoryLink_Click(object sender, RoutedEventArgs e) =>
-        Process.Start(new ProcessStartInfo("https://github.com/jtylek/PHP-windows-devstack") { UseShellExecute = true });
-
     private void About_Click(object sender, RoutedEventArgs e) =>
-        MessageBox.Show(
-            this,
-            "PHP Windows DevStack is a native, portable Windows development environment for PHP applications.\n\n" +
-            "It includes Apache HTTP Server, PHP 8.5, MariaDB, and a desktop control panel.",
-            "About PHP Windows DevStack",
-            MessageBoxButton.OK,
-            MessageBoxImage.Information);
+        new AboutWindow { Owner = this }.ShowDialog();
 
     private void MariaDbSettings_Click(object sender, RoutedEventArgs e)
     {

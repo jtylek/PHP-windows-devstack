@@ -18,9 +18,6 @@
                     VerticalAlignment="Top" Click="About_Click" />
             <StackPanel>
                 <TextBlock Text="PHP Windows DevStack" FontSize="28" FontWeight="SemiBold" />
-                <TextBlock Margin="0,2,0,0">
-                    <Hyperlink Click="RepositoryLink_Click">https://github.com/jtylek/PHP-windows-devstack</Hyperlink>
-                </TextBlock>
                 <TextBlock x:Name="VersionSummary" Foreground="#52606D" Margin="0,4,0,0" />
             </StackPanel>
         </DockPanel>
