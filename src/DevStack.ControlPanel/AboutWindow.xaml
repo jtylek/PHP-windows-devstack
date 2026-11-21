@@ -7,7 +7,7 @@
     <StackPanel Margin="24">
         <TextBlock Text="PHP Windows DevStack" FontSize="22" FontWeight="SemiBold" />
         <TextBlock TextWrapping="Wrap" Margin="0,12,0,0"
-                   Text="PHP Windows DevStack is a native, portable Windows development environment for PHP applications. It includes Apache HTTP Server, PHP 8.5, MariaDB, and a desktop control panel." />
+                   Text="PHP Windows DevStack is a native, portable Windows development environment for PHP applications. It includes Apache HTTP Server, PHP 8.5, MariaDB and Mailpit, and a desktop control panel." />
         <TextBlock Text="Copyright (c) 2026 by Janusz Tylek" Margin="0,16,0,0" />
         <TextBlock Text="Released under MIT license" Margin="0,2,0,0" />
         <TextBlock Margin="0,2,0,0">

@@ -247,6 +247,18 @@ public partial class MainWindow : Window
     private void About_Click(object sender, RoutedEventArgs e) =>
         new AboutWindow { Owner = this }.ShowDialog();
 
+    private void ApacheTools_Click(object sender, RoutedEventArgs e)
+    {
+        ApacheToolsMenu.PlacementTarget = ApacheToolsButton;
+        ApacheToolsMenu.IsOpen = true;
+    }
+
+    private void MariaDbTools_Click(object sender, RoutedEventArgs e)
+    {
+        MariaDbToolsMenu.PlacementTarget = MariaDbToolsButton;
+        MariaDbToolsMenu.IsOpen = true;
+    }
+
     private void MariaDbSettings_Click(object sender, RoutedEventArgs e)
     {
         try
