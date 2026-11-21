@@ -216,9 +216,11 @@ Run these checks from the repository root:
 git diff --check
 ```
 
-The local development machine may not have the .NET 8 SDK or Inno Setup. In
-that case, do not claim a local build passed; the GitHub Actions results are the
-authoritative build verification. The CI build uses Windows and .NET 8.
+The Windows distributable (installer) is built on GitHub Actions only; do not
+build it locally. The local development machine intentionally has no .NET 8 SDK
+and Inno Setup is not used from here, so do not install them or claim a local
+build passed. The GitHub Actions results are the authoritative build
+verification. The CI build uses Windows and .NET 8.
 
 ## Publishing a new installer release
 
