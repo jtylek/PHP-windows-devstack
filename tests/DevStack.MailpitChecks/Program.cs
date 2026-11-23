@@ -17,6 +17,21 @@ async Task<int> MessageCount()
     using var json = JsonDocument.Parse(await http.GetStringAsync(MailpitService.InboxUrl + "api/v1/messages"));
     return json.RootElement.GetProperty("total").GetInt32();
 }
+// A stopped Mailpit can keep its ports and files for a moment on a busy CI runner.
+async Task WaitForPortsFree()
+{
+    for (var i = 0; i < 50 && !(PortProbe.IsAvailable(MailpitService.SmtpPort) && PortProbe.IsAvailable(MailpitService.WebPort)); i++)
+        await Task.Delay(200);
+}
+async Task DeleteWithRetry(string path)
+{
+    for (var i = 0; i < 20 && Directory.Exists(path); i++)
+    {
+        try { Directory.Delete(path, recursive: true); }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException) { await Task.Delay(500); }
+    }
+    if (Directory.Exists(path)) Console.WriteLine($"Warning: could not remove temporary folder {path}.");
+}
 try
 {
     try { await service.StartAsync(); throw new Exception("Missing Mailpit binary was accepted."); }
@@ -37,6 +52,7 @@ try
     }
     Environment.SetEnvironmentVariable("MP_SMTP_RELAY_CONFIG", Path.Combine(paths.Root, "nonexistent-relay.yml"));
     Environment.SetEnvironmentVariable("MP_UI_BIND_ADDR", "0.0.0.0:18025");
+    await WaitForPortsFree();
     await service.StartAsync();
     Check(service.IsRunning, "Mailpit did not start.");
     await service.StartAsync(); // idempotent, no second process/bind
@@ -49,6 +65,7 @@ try
     await service.StopAsync();
     Check(!service.IsRunning && PortProbe.IsAvailable(MailpitService.SmtpPort) && PortProbe.IsAvailable(MailpitService.WebPort),
         "Stop did not release both ports.");
+    await WaitForPortsFree();
     await service.StartAsync();
     Check(await MessageCount() == 1, "Captured message was lost after restart.");
     Check(File.ReadAllText(legacy).Contains("Preserve me."), "Legacy capture was changed.");
@@ -63,6 +80,7 @@ try
     // Repeated discovery during exit exercises short-lived process races on CI.
     for (var attempt = 0; attempt < 5; attempt++)
     {
+        await WaitForPortsFree();
         await service.StartAsync();
         using var reconnected = new MailpitService(paths);
         Check(reconnected.IsRunning, "Reconnect lost the running process.");
@@ -75,8 +93,8 @@ try
 }
 finally
 {
-    await service.StopAsync();
+    try { await service.StopAsync(); } catch (Exception exception) { Console.WriteLine($"Warning: stopping Mailpit failed during cleanup: {exception.Message}"); }
     Environment.SetEnvironmentVariable("MP_SMTP_RELAY_CONFIG", oldRelay);
     Environment.SetEnvironmentVariable("MP_UI_BIND_ADDR", oldBind);
-    if (Directory.Exists(paths.Root)) Directory.Delete(paths.Root, recursive: true);
+    await DeleteWithRetry(paths.Root);
 }
