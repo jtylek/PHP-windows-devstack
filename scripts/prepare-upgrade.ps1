@@ -65,14 +65,14 @@ try {
     [Array]::Clear($plain, 0, $plain.Length)
 
     $manifest = Get-Content -LiteralPath $ManifestPath -Raw | ConvertFrom-Json
-    $report = @('Update existing installation.', 'Runtime comparison against this installer''s supported versions:')
+    $report = @('Update existing installation.', 'Runtime comparison against this installer''s supported versions:', '')
     foreach ($item in $manifest.components | Where-Object { $_.enabled }) {
         $componentRoot = if ($item.name -eq 'phpmyadmin') { Join-Path $root $item.targetDirectory } else { Join-Path "$root\runtime" $item.targetDirectory }
         $receiptPath = Join-Path $componentRoot '.devstack-receipt.json'
         # Older releases used in-process SMTP. Only an entirely absent Mailpit
         # directory is a new component; partial installations still block.
         if ($item.name -eq 'mailpit' -and -not (Test-Path -LiteralPath $componentRoot)) {
-            $report += 'Mailpit: new component; install after backup.'
+            $report += 'Mailpit', '  New component; install after backup.', ''
             continue
         }
         if (-not (Test-Path -LiteralPath $receiptPath)) { throw "Missing $($item.name) installation receipt. Update stopped; repair/identify this runtime before replacing it." }
@@ -87,15 +87,15 @@ try {
             throw "MariaDB $installed to $supported needs a separate database migration. Automatic cross-series updates are blocked."
         }
         if ($installed -ge $supported) {
-            $report += "$($item.displayName): installed $installed; supported $supported. Does not need updating - skipped."
+            $report += $item.displayName, "  Installed $installed; supported $supported.", '  Does not need updating - skipped.', ''
         } else {
-            $report += "$($item.displayName): update $installed -> $supported (backup first)."
+            $report += $item.displayName, "  Installed $installed; supported $supported.", "  Needs updating: $installed -> $supported (backup first).", ''
         }
     }
 
     if ($SkipBackup) {
-        $report += 'WARNING: The user chose to skip the safety backup. If this update fails, the previous installation cannot be restored from a setup-created backup.'
         $report += 'Backup skipped by user.'
+        $report += 'WARNING: The user chose to skip the safety backup. If this update fails, the previous installation cannot be restored from a setup-created backup.'
         $report | Set-Content -LiteralPath $ResultPath
         exit 0
     }

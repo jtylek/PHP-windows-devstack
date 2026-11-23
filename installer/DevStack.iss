@@ -139,6 +139,73 @@ begin
   end;
 end;
 
+procedure ShowUpgradeReport(const ReportText: String);
+var
+  Form: TForm;
+  Lines: TStringList;
+  LineLabel: TNewStaticText;
+  OkButton: TNewButton;
+  Normalized: String;
+  I, Y, LabelWidth: Integer;
+begin
+  Normalized := ReportText;
+  StringChangeEx(Normalized, #13#10, #10, True);
+  StringChangeEx(Normalized, #13, #10, True);
+  Lines := TStringList.Create;
+  Form := TForm.Create(nil);
+  try
+    Lines.Text := Normalized;
+    Form.Caption := 'Setup';
+    Form.BorderStyle := bsDialog;
+    Form.Position := poScreenCenter;
+    Form.ClientWidth := ScaleX(560);
+    Form.Font.Name := WizardForm.Font.Name;
+    Form.Font.Size := WizardForm.Font.Size;
+    LabelWidth := Form.ClientWidth - ScaleX(48);
+    Y := ScaleY(20);
+    for I := 0 to Lines.Count - 1 do
+    begin
+      if Trim(Lines[I]) = '' then
+      begin
+        Y := Y + ScaleY(8);
+        Continue;
+      end;
+      LineLabel := TNewStaticText.Create(Form);
+      LineLabel.Parent := Form;
+      LineLabel.AutoSize := True;
+      LineLabel.WordWrap := True;
+      LineLabel.Left := ScaleX(24);
+      LineLabel.Top := Y;
+      LineLabel.Width := LabelWidth;
+      LineLabel.Caption := Lines[I];
+      // A line followed by an indented line is a step heading (component name).
+      if (I + 1 < Lines.Count) and (Copy(Lines[I + 1], 1, 2) = '  ') and (Copy(Lines[I], 1, 2) <> '  ') then
+        LineLabel.Font.Style := [fsBold];
+      if Copy(Lines[I], 1, 2) = '  ' then
+      begin
+        LineLabel.Caption := Trim(Lines[I]);
+        LineLabel.Left := ScaleX(44);
+        LineLabel.Width := LabelWidth - ScaleX(20);
+      end;
+      Y := Y + LineLabel.Height + ScaleY(3);
+    end;
+    OkButton := TNewButton.Create(Form);
+    OkButton.Parent := Form;
+    OkButton.Caption := 'OK';
+    OkButton.ModalResult := mrOk;
+    OkButton.Default := True;
+    OkButton.Width := ScaleX(90);
+    OkButton.Height := ScaleY(25);
+    OkButton.Left := Form.ClientWidth - OkButton.Width - ScaleX(24);
+    OkButton.Top := Y + ScaleY(16);
+    Form.ClientHeight := OkButton.Top + OkButton.Height + ScaleY(16);
+    Form.ShowModal;
+  finally
+    Form.Free;
+    Lines.Free;
+  end;
+end;
+
 function PrepareToInstall(var NeedsRestart: Boolean): String;
 var
   ExitCode: Integer;
@@ -185,7 +252,7 @@ begin
     if ExitCode <> 0 then
       Result := UpgradeReport
     else if not WizardSilent then
-      MsgBox(UpgradeReport, mbInformation, MB_OK);
+      ShowUpgradeReport(UpgradeReport);
   finally
     if Started then
       UpgradeProgressPage.Hide;

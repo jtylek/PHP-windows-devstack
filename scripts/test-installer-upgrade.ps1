@@ -112,7 +112,7 @@ openssl.cafile="$customCaPath"
     }
     $report = Get-Content "$root\logs\upgrade-report.txt" -Raw
     if ($report -notmatch 'Verified full backup:' -or ([regex]::Matches($report, 'Does not need updating - skipped')).Count -ne 4) { throw 'Missing backup/skip report.' }
-    if ($report -notmatch 'Mailpit: new component' -or -not (Test-Path -LiteralPath "$root\runtime\mailpit\mailpit.exe")) { throw 'Upgrade did not add Mailpit to the older installation.' }
+    if ($report -notmatch '(?m)^Mailpit\r?\n\s+New component' -or -not (Test-Path -LiteralPath "$root\runtime\mailpit\mailpit.exe")) { throw 'Upgrade did not add Mailpit to the older installation.' }
     if ((Get-Content -LiteralPath "$root\data\smtp\legacy.eml" -Raw) -ne 'legacy SMTP capture sentinel') { throw 'Upgrade changed legacy SMTP captures.' }
     if ($report -notmatch 'Preserved 1 symbolic link/junction as links') { throw 'Project junction was not reported.' }
     $backupPath = ([regex]::Match($report, '(?m)^Verified full backup:\s*(.+)$')).Groups[1].Value.Trim()
