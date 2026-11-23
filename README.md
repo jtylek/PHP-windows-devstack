@@ -9,7 +9,7 @@ behind a small desktop control panel. No Docker required.
 
 ## Download for Windows
 
-**[Download the latest release: 1.0 RC14](https://github.com/jtylek/PHP-windows-devstack/releases/tag/v1.0.0-rc.14)**
+**[Download the latest release: 1.0](https://github.com/jtylek/PHP-windows-devstack/releases/tag/v1.0.0)**
 (Windows 10/11 x64; all versions are on the [Releases page](https://github.com/jtylek/PHP-windows-devstack/releases)). Run the setup EXE; the default folder is `C:\PHPDevStack`.
 
 > Project status: ready for development use on a local or trusted private network; not
@@ -20,9 +20,9 @@ behind a small desktop control panel. No Docker required.
 
 | Service | Address |
 | --- | --- |
-| Apache (web root `www/`) | `http://127.0.0.1:8080` |
-| phpMyAdmin | `http://127.0.0.1:8080/phpmyadmin` |
-| MariaDB | `127.0.0.1:3307` (local only) |
+| Apache (web root `www/`) | `http://127.0.0.1:80` |
+| phpMyAdmin | `http://127.0.0.1:80/phpmyadmin` |
+| MariaDB | `127.0.0.1:3306` (local only) |
 | Mailpit SMTP / inbox | `127.0.0.1:25` / `http://127.0.0.1:8025` |
 
 ## Documentation

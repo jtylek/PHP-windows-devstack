@@ -26,7 +26,7 @@ and ports, and then supervises the server processes.
 ## Process lifecycle
 
 1. Validate the runtime layout.
-2. Confirm ports 8080 and 3307 are available.
+2. Confirm ports 80 and 3306 are available.
 3. Render configuration into `runtime/config/generated`.
 4. Start MariaDB and wait for its TCP listener.
 5. Start Apache and wait for its TCP listener.

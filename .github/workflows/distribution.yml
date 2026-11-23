@@ -27,7 +27,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  RELEASE_TAG: v1.0.0-rc.14
+  RELEASE_TAG: v1.0.0
   APACHE_SHA256: 10b310843c4763d7efa2c04d3e474c35bb9dee927babb5a167cbebd1545eff3f
 
 jobs:
@@ -61,7 +61,7 @@ jobs:
         run: |
           gh release view $env:RELEASE_TAG *> $null
           if ($LASTEXITCODE -ne 0) {
-            gh release create $env:RELEASE_TAG --target $env:GITHUB_SHA --prerelease --title 'PHP Windows DevStack 1.0 RC14' --notes 'Unsigned Windows 10/11 x64 release candidate.'
+            gh release create $env:RELEASE_TAG --target $env:GITHUB_SHA --title 'PHP Windows DevStack 1.0' --notes 'Unsigned Windows 10/11 x64 release. Default ports: Apache 80, MariaDB 3306, Mailpit SMTP 25 and inbox 8025.'
           }
           gh release upload $env:RELEASE_TAG artifacts/apache-release/* --clobber
 
@@ -88,7 +88,7 @@ jobs:
       - name: Install silently and verify runtime layout
         shell: pwsh
         run: |
-          $setup = 'artifacts/PHP-Windows-DevStack-Setup-1.0.0-rc.14-win-x64.exe'
+          $setup = 'artifacts/PHP-Windows-DevStack-Setup-1.0.0-win-x64.exe'
           $testRoot = 'C:\ds-test'
           $installerLog = 'C:\ds-installer.log'
           $process = Start-Process $setup -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', "/DIR=$testRoot", "/LOG=$installerLog" -Wait -PassThru
@@ -144,12 +144,14 @@ jobs:
 
           $webProbe = Join-Path $testRoot 'www\ca-probe.php'
           Copy-Item -LiteralPath $probe -Destination $webProbe
+          $httpPort = [regex]::Match((Get-Content -LiteralPath "$testRootuntime\config\generated\httpd.conf" -Raw), '(?m)^Listen (\d+)').Groups[1].Value
+          if (-not $httpPort) { throw 'Generated httpd.conf has no Listen port.' }
           $httpd = $null
           try {
             $httpd = Start-Process -FilePath "$testRoot\runtime\apache\bin\httpd.exe" -ArgumentList @('-f', "$testRoot\runtime\config\generated\httpd.conf") -WorkingDirectory "$testRoot\runtime\apache" -PassThru -WindowStyle Hidden
             $response = $null
             for ($attempt = 0; $attempt -lt 20 -and $null -eq $response; $attempt++) {
-              try { $response = Invoke-WebRequest -Uri 'http://127.0.0.1:8080/ca-probe.php' -TimeoutSec 5 }
+              try { $response = Invoke-WebRequest -Uri "http://127.0.0.1:$httpPort/ca-probe.php" -TimeoutSec 5 }
               catch {
                 if ($httpd.HasExited) { throw "Apache exited before the PHP HTTPS probe completed. $($_.Exception.Message)" }
                 Start-Sleep -Seconds 1
@@ -169,14 +171,14 @@ jobs:
 
       - name: Verify in-place update preserves existing data
         shell: powershell
-        run: ./scripts/test-installer-upgrade.ps1 -SetupPath "${{ github.workspace }}/artifacts/PHP-Windows-DevStack-Setup-1.0.0-rc.14-win-x64.exe"
+        run: ./scripts/test-installer-upgrade.ps1 -SetupPath "${{ github.workspace }}/artifacts/PHP-Windows-DevStack-Setup-1.0.0-win-x64.exe"
 
       - name: Write installer checksum
         shell: pwsh
         run: |
-          $setup = 'artifacts/PHP-Windows-DevStack-Setup-1.0.0-rc.14-win-x64.exe'
+          $setup = 'artifacts/PHP-Windows-DevStack-Setup-1.0.0-win-x64.exe'
           $hash = (Get-FileHash $setup -Algorithm SHA256).Hash.ToLowerInvariant()
-          "$hash  PHP-Windows-DevStack-Setup-1.0.0-rc.14-win-x64.exe" | Set-Content "$setup.sha256" -Encoding ascii
+          "$hash  PHP-Windows-DevStack-Setup-1.0.0-win-x64.exe" | Set-Content "$setup.sha256" -Encoding ascii
 
       - name: Upload setup to release
         shell: pwsh
@@ -184,16 +186,16 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release upload $env:RELEASE_TAG `
-            artifacts/PHP-Windows-DevStack-Setup-1.0.0-rc.14-win-x64.exe `
-            artifacts/PHP-Windows-DevStack-Setup-1.0.0-rc.14-win-x64.exe.sha256 `
+            artifacts/PHP-Windows-DevStack-Setup-1.0.0-win-x64.exe `
+            artifacts/PHP-Windows-DevStack-Setup-1.0.0-win-x64.exe.sha256 `
             --clobber
 
       - name: Upload workflow artifact
         uses: actions/upload-artifact@v4
         with:
-          name: PHP-Windows-DevStack-Setup-1.0.0-rc.14-win-x64
+          name: PHP-Windows-DevStack-Setup-1.0.0-win-x64
           path: |
-            artifacts/PHP-Windows-DevStack-Setup-1.0.0-rc.14-win-x64.exe
-            artifacts/PHP-Windows-DevStack-Setup-1.0.0-rc.14-win-x64.exe.sha256
+            artifacts/PHP-Windows-DevStack-Setup-1.0.0-win-x64.exe
+            artifacts/PHP-Windows-DevStack-Setup-1.0.0-win-x64.exe.sha256
           if-no-files-found: error
           retention-days: 14

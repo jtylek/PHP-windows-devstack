@@ -50,10 +50,12 @@ known workarounds change.
   The UI saves overrides for next restart and opens both database logs. Do not
   pass the new template to an old panel that cannot resolve its placeholder.
 
-- Apache: all interfaces, port `8080`; LAN access is subject to Windows Firewall.
-- MariaDB: `127.0.0.1:3307` (loopback-only).
+- Apache: all interfaces, port `80`; LAN access is subject to Windows Firewall.
+- MariaDB: `127.0.0.1:3306` (loopback-only). Installs older than 1.0 (8080/3307)
+  keep their ports: setup writes `ports.json` with the legacy values when upgrading
+  an install that has none.
 - Mailpit SMTP capture: `127.0.0.1:25`; web inbox: `http://127.0.0.1:8025/`.
-- phpMyAdmin: `http://127.0.0.1:8080/phpmyadmin` unless the Apache port is
+- phpMyAdmin: `http://127.0.0.1:80/phpmyadmin` unless the Apache port is
   changed in the control panel.
 - MariaDB root password is generated during setup and stored encrypted with
   Windows DPAPI at `data/secrets/mariadb-root-password.dpapi`.
@@ -87,7 +89,7 @@ known workarounds change.
 - For an Epesi checkout, run Composer from `C:\PHPDevStack\www` so that
   `vendor/` is created in the project root. Check `.env`, writable
   `storage/`, `bootstrap/cache/`, `modules/`, and `public/`, and use MariaDB
-  port `3307` unless the user changed it.
+  port `3306` unless the user changed it.
 
 ## Known installer and runtime gotchas
 
@@ -139,10 +141,11 @@ known workarounds change.
   - `C:\PHPDevStack\setup-progress.txt`.
 - MariaDB is started temporarily during setup to initialize its data directory
   and phpMyAdmin configuration storage. The bootstrap code currently uses
-  port `3307` deliberately. If changing the install-time default port, update
-  every bootstrap client/initializer reference in `scripts/setup-runtime.ps1`,
-  the generated phpMyAdmin config, and the verification flow—not just the
-  runtime template.
+  port `3307` deliberately, separate from the runtime default `3306`, so a
+  MySQL/MariaDB already on 3306 cannot break installation. Only the generated
+  phpMyAdmin config port must match the runtime default; if changing the
+  bootstrap port, update every client/initializer reference in
+  `scripts/setup-runtime.ps1`.
 - A previous setup can leave a partially initialized `data/` directory. Check
   logs and process state before retrying, and preserve logs for diagnosis.
 - The installer progress display is driven by lines emitted to the progress
@@ -224,7 +227,8 @@ verification. The CI build uses Windows and .NET 8.
 
 ## Publishing a new installer release
 
-- RC14 adds native Mailpit. The distribution workflow reuses the checksum-pinned
+- Release 1.0 (tag `v1.0.0`, a full release, not a prerelease) changed the default
+  ports to 80/3306. RC14 added native Mailpit. The distribution workflow reuses the checksum-pinned
   Apache payload from RC13 when preparing the new release. PHP 8.5.12 is now
   downloaded from the official `releases/archives` path (same pinned hash).
 

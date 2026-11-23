@@ -5,7 +5,7 @@
 Download the latest installer from the
 [Releases page](https://github.com/jtylek/PHP-windows-devstack/releases) and run it.
 The current direct link is the
-[PHP Windows DevStack 1.0 RC14 installer](https://github.com/jtylek/PHP-windows-devstack/releases/download/v1.0.0-rc.14/PHP-Windows-DevStack-Setup-1.0.0-rc.14-win-x64.exe).
+[PHP Windows DevStack 1.0 installer](https://github.com/jtylek/PHP-windows-devstack/releases/download/v1.0.0/PHP-Windows-DevStack-Setup-1.0.0-win-x64.exe).
 The default installation directory is `C:\PHPDevStack`; installing there requires administrator
 rights. It installs a self-contained control panel, downloads checksum-pinned
 Apache, PHP, MariaDB and Mailpit archives, initializes a local MariaDB instance, and

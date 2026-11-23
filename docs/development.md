@@ -21,8 +21,8 @@
 | Database | MariaDB LTS x64 |
 | Mail capture | Mailpit 1.33.1 native Windows x64 |
 | Web root | `www/` |
-| HTTP access | Local: `http://127.0.0.1:8080`; LAN: `http://<PC-LAN-IP>:8080` |
-| Database endpoint | `127.0.0.1:3307` (local only) |
+| HTTP access | Local: `http://127.0.0.1:80`; LAN: `http://<PC-LAN-IP>:80` |
+| Database endpoint | `127.0.0.1:3306` (local only) |
 
 PHP Windows DevStack bundles PHP 8.5.12 Thread Safe x64, which fixes the critical
 security vulnerabilities CVE-2026-109618 and CVE-2026-109619. The official Windows

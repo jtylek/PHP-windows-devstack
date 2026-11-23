@@ -21,7 +21,7 @@
             </Grid.ColumnDefinitions>
             <StackPanel>
                 <TextBlock Text="Apache HTTP Server" />
-                <TextBlock Text="Default: 8080 · Common: 80" Foreground="#667085" Margin="0,3,0,0" />
+                <TextBlock Text="Default: 80 · Alternative: 8080" Foreground="#667085" Margin="0,3,0,0" />
             </StackPanel>
             <TextBox x:Name="ApachePortTextBox" Grid.Column="1" Padding="7" VerticalContentAlignment="Center" />
         </Grid>
@@ -32,7 +32,7 @@
             </Grid.ColumnDefinitions>
             <StackPanel>
                 <TextBlock Text="MariaDB" />
-                <TextBlock Text="Default: 3307 · Common: 3306" Foreground="#667085" Margin="0,3,0,0" />
+                <TextBlock Text="Default: 3306 · Alternative: 3307" Foreground="#667085" Margin="0,3,0,0" />
             </StackPanel>
             <TextBox x:Name="MariaDbPortTextBox" Grid.Column="1" Padding="7" VerticalContentAlignment="Center" />
         </Grid>

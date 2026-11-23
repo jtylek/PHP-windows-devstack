@@ -293,6 +293,12 @@ if ($existingDatabase) {
         throw 'Existing phpMyAdmin configuration is missing. Restore it from the pre-update backup; setup will not reset passwords or database contents.'
     }
     & (Join-Path $PSScriptRoot 'merge-mariadb-template.ps1') -InstallRoot $installFullPath
+    # Installs older than 1.0 defaulted to ports 8080/3307 and may have no ports.json; pin them so an upgrade does not move the ports.
+    $portsFile = Join-Path $installFullPath 'data/config/ports.json'
+    if (-not (Test-Path -LiteralPath $portsFile -PathType Leaf)) {
+        [IO.Directory]::CreateDirectory((Split-Path -Parent $portsFile)) | Out-Null
+        [IO.File]::WriteAllText($portsFile, "{`r`n  `"HttpPort`": 8080,`r`n  `"MariaDbPort`": 3307`r`n}", (New-Object Text.UTF8Encoding($false)))
+    }
     Write-Host 'Existing databases, passwords, phpMyAdmin configuration and user settings preserved. Database initialization skipped.'
     Write-ProgressState -Completed 8 -Total 8 -Message 'Update complete; existing data preserved.'
     'ready' | Set-Content -LiteralPath (Join-Path $installFullPath '.devstack-ready') -Encoding ascii
@@ -314,7 +320,7 @@ $cfg['blowfish_secret'] = sodium_hex2bin('__BLOWFISH_SECRET__');
 $i = 1;
 $cfg['Servers'][$i]['auth_type'] = 'cookie';
 $cfg['Servers'][$i]['host'] = '127.0.0.1';
-$cfg['Servers'][$i]['port'] = 3307;
+$cfg['Servers'][$i]['port'] = 3306;
 $cfg['Servers'][$i]['connect_type'] = 'tcp';
 $cfg['Servers'][$i]['AllowNoPassword'] = false;
 '@.Replace('__BLOWFISH_SECRET__', $phpMyAdminSecret)

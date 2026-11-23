@@ -7,7 +7,7 @@ to the public internet.
 
 - Apache listens on all interfaces and serves the `www/` web root to LAN clients; phpMyAdmin remains local-only.
 - MariaDB binds to `127.0.0.1` only.
-- MariaDB uses nonstandard development port `3307` by default; Apache defaults to `8080`.
+- MariaDB uses the standard port `3306` by default (loopback-only); Apache defaults to `80`.
 - Allow Apache inbound traffic only on Windows' Private network profile, and never expose the development stack to the public internet.
 - Runtime downloads must have a pinned SHA-256 checksum.
 - Database data and credentials are never stored in the source tree.

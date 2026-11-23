@@ -2,7 +2,7 @@ namespace DevStack.Core;
 
 public sealed class StackOptions
 {
-    public StackOptions(int httpPort = 8080, int mariaDbPort = 3307)
+    public StackOptions(int httpPort = 80, int mariaDbPort = 3306)
     {
         HttpPort = httpPort;
         MariaDbPort = mariaDbPort;

@@ -2,7 +2,7 @@
 
 ## phpMyAdmin and databases
 
-After starting DevStack, open `http://127.0.0.1:8080/phpmyadmin` (or use the
+After starting DevStack, open `http://127.0.0.1:80/phpmyadmin` (or use the
 **Open phpMyAdmin** button). Log in with username `root`. To display the generated
 root password for the current Windows user, run:
 
@@ -21,7 +21,8 @@ the installer verifies its SHA-256 checksum before extraction.
 
 The control panel provides **PHP extensions**, **OPcache settings**, and
 **Port settings**. OPcache is enabled for both web requests and CLI PHP by default.
-Apache defaults to port `8080` and MariaDB to `3307`; both
+Apache defaults to port `80` and MariaDB to `3306` (installs upgraded from a
+release candidate keep `8080`/`3307`); both
 can be changed to common ports such as `80` and `3306`. DevStack checks that a
 new port is available before saving it, and the services must be stopped before
 changing ports. PHP setting changes are stored under `data/config` and only
@@ -31,11 +32,11 @@ require restarting Apache; MariaDB is not restarted.
 
 Apache listens on all network interfaces and serves files from `www/` to LAN
 clients on the configured HTTP port. Find the PC's private IPv4 address with
-`ipconfig`, then open `http://<PC-LAN-IP>:8080` from another device (replace
-`8080` if you changed Apache's port). Windows Defender Firewall must allow the
+`ipconfig`, then open `http://<PC-LAN-IP>:80` from another device (replace
+`80` if you changed Apache's port). Windows Defender Firewall must allow the
 selected Apache port on the Private network profile. Do not expose it through a
 Public profile or router port forwarding. MariaDB remains bound to
-`127.0.0.1:3307` by default, and phpMyAdmin is restricted to local access.
+`127.0.0.1:3306` by default, and phpMyAdmin is restricted to local access.
 An update migrates the stock Apache loopback-only directives to these LAN
 defaults while preserving customized listen addresses and access rules.
 
