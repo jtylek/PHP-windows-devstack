@@ -33,7 +33,7 @@
                 </LinearGradientBrush>
             </Border.Background>
             <DockPanel>
-                <Button DockPanel.Dock="Right" Content="About" Style="{StaticResource GhostButton}"
+                <Button DockPanel.Dock="Right" Content="About" Style="{StaticResource GreyButton}"
                         Padding="16,7" VerticalAlignment="Top" Click="About_Click" />
                 <StackPanel>
                     <TextBlock Text="PHP Windows DevStack" FontSize="28" FontWeight="SemiBold" Foreground="White" />

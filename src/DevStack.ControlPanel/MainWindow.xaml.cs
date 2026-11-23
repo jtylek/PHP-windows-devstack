@@ -336,7 +336,6 @@ public partial class MainWindow : Window
         try
         {
             controller.StartApacheOnly();
-            AppendLog("Apache started.");
         }
         catch (Exception exception)
         {
@@ -354,7 +353,6 @@ public partial class MainWindow : Window
         try
         {
             controller.StartMariaDbOnly();
-            AppendLog("MariaDB started.");
         }
         catch (Exception exception)
         {
