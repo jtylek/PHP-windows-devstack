@@ -14,3 +14,5 @@ data/
 logs/
 *.user
 *.suo
+.serena/
+.vscode/
