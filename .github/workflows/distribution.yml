@@ -144,11 +144,16 @@ jobs:
 
           $webProbe = Join-Path $testRoot 'www\ca-probe.php'
           Copy-Item -LiteralPath $probe -Destination $webProbe
-          $httpPort = [regex]::Match((Get-Content -LiteralPath "$testRoot\runtime\config\generated\httpd.conf" -Raw), '(?m)^Listen (\d+)').Groups[1].Value
-          if (-not $httpPort) { throw 'Generated httpd.conf has no Listen port.' }
+          # The runner already serves port 80, so probe a copy of the config on a private port.
+          $probeConf = "$testRoot\runtime\config\generated\httpd-probe.conf"
+          $httpPort = 18080
+          $confText = Get-Content -LiteralPath "$testRoot\runtime\config\generated\httpd.conf" -Raw
+          if ($confText -notmatch '(?m)^Listen \d+') { throw 'Generated httpd.conf has no Listen port.' }
+          $confText = $confText -replace '(?m)^Listen \d+', "Listen $httpPort" -replace '(?m)^ServerName localhost:\d+', "ServerName localhost:$httpPort"
+          Set-Content -LiteralPath $probeConf -Value $confText -Encoding ascii
           $httpd = $null
           try {
-            $httpd = Start-Process -FilePath "$testRoot\runtime\apache\bin\httpd.exe" -ArgumentList @('-f', "$testRoot\runtime\config\generated\httpd.conf") -WorkingDirectory "$testRoot\runtime\apache" -PassThru -WindowStyle Hidden
+            $httpd = Start-Process -FilePath "$testRoot\runtime\apache\bin\httpd.exe" -ArgumentList @('-f', $probeConf) -WorkingDirectory "$testRoot\runtime\apache" -PassThru -WindowStyle Hidden
             $response = $null
             for ($attempt = 0; $attempt -lt 20 -and $null -eq $response; $attempt++) {
               try { $response = Invoke-WebRequest -Uri "http://127.0.0.1:$httpPort/ca-probe.php" -TimeoutSec 5 }
