@@ -144,7 +144,7 @@ jobs:
 
           $webProbe = Join-Path $testRoot 'www\ca-probe.php'
           Copy-Item -LiteralPath $probe -Destination $webProbe
-          $httpPort = [regex]::Match((Get-Content -LiteralPath "$testRootuntime\config\generated\httpd.conf" -Raw), '(?m)^Listen (\d+)').Groups[1].Value
+          $httpPort = [regex]::Match((Get-Content -LiteralPath "$testRoot\runtime\config\generated\httpd.conf" -Raw), '(?m)^Listen (\d+)').Groups[1].Value
           if (-not $httpPort) { throw 'Generated httpd.conf has no Listen port.' }
           $httpd = $null
           try {
