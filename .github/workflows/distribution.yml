@@ -47,7 +47,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           New-Item -ItemType Directory -Path artifacts/apache-release -Force | Out-Null
-          gh release download v1.0.0-rc.13 --repo "${{ github.repository }}" --pattern 'apache-httpd-2.4.69-win64-vs17*' --dir artifacts/apache-release
+          gh release download v1.0.0 --repo "${{ github.repository }}" --pattern 'apache-httpd-2.4.69-win64-vs17*' --dir artifacts/apache-release
           $archive = 'artifacts/apache-release/apache-httpd-2.4.69-win64-vs17.zip'
           $actual = (Get-FileHash $archive -Algorithm SHA256).Hash.ToLowerInvariant()
           if ($actual -cne $env:APACHE_SHA256) {

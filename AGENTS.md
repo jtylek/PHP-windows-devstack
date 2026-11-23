@@ -228,7 +228,7 @@ verification. The CI build uses Windows and .NET 8.
 ## Publishing a new installer release
 
 - Release 1.0 (tag `v1.0.0`, a full release, not a prerelease) changed the default
-  ports to 80/3306. RC14 added native Mailpit. The distribution workflow reuses the checksum-pinned
+  ports to 80/3306. RC14 added native Mailpit. Old pre-releases were deleted; the Apache payload is now downloaded from the `v1.0.0` release. The distribution workflow reuses the checksum-pinned
   Apache payload from RC13 when preparing the new release. PHP 8.5.12 is now
   downloaded from the official `releases/archives` path (same pinned hash).
 
